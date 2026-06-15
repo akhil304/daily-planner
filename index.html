@@ -1,281 +1,197 @@
-
-<h2 class="sr-only">Interactive daily hourly planner with task list and calendar time blocks</h2>
-
-<style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: var(--font-sans); }
-.planner { display: grid; grid-template-columns: 1fr 280px; gap: 16px; padding: 1rem 0; min-height: 600px; }
-.panel-title { font-size: 13px; font-weight: 500; color: var(--color-text-secondary); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 10px; }
-.time-col { display: flex; flex-direction: column; gap: 0; }
-.hour-row { display: flex; align-items: stretch; min-height: 56px; position: relative; }
-.hour-label { width: 52px; flex-shrink: 0; font-size: 12px; color: var(--color-text-tertiary); padding-top: 4px; text-align: right; padding-right: 10px; line-height: 1; }
-.hour-cell { flex: 1; border-top: 0.5px solid var(--color-border-tertiary); position: relative; cursor: pointer; transition: background 0.1s; padding: 4px 6px; min-height: 56px; }
-.hour-cell:hover { background: var(--color-background-secondary); }
-.hour-cell.has-block { cursor: default; }
-.task-block { border-radius: 6px; padding: 5px 8px; font-size: 12px; font-weight: 500; position: relative; margin-bottom: 2px; display: flex; align-items: center; justify-content: space-between; gap: 4px; }
-.task-block .remove-block { opacity: 0; background: none; border: none; cursor: pointer; font-size: 14px; color: inherit; padding: 0 2px; line-height: 1; transition: opacity 0.1s; }
-.task-block:hover .remove-block { opacity: 0.7; }
-.color-purple .task-block { background: #EEEDFE; color: #3C3489; }
-.color-teal .task-block { background: #E1F5EE; color: #085041; }
-.color-coral .task-block { background: #FAECE7; color: #712B13; }
-.color-blue .task-block { background: #E6F1FB; color: #0C447C; }
-.color-amber .task-block { background: #FAEEDA; color: #633806; }
-.color-green .task-block { background: #EAF3DE; color: #27500A; }
-.color-pink .task-block { background: #FBEAF0; color: #72243E; }
-.right-panel { display: flex; flex-direction: column; gap: 16px; }
-.task-list-panel { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 14px; flex: 1; display: flex; flex-direction: column; }
-.task-input-row { display: flex; gap: 6px; margin-bottom: 10px; }
-.task-input-row input { flex: 1; font-size: 13px; padding: 6px 10px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: var(--color-background-secondary); color: var(--color-text-primary); min-width: 0; }
-.task-input-row input:focus { outline: none; border-color: var(--color-border-primary); }
-.task-input-row button { font-size: 18px; padding: 4px 10px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: none; cursor: pointer; color: var(--color-text-secondary); flex-shrink: 0; }
-.task-input-row button:hover { background: var(--color-background-secondary); }
-.task-items { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; max-height: 320px; flex: 1; }
-.task-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-tertiary); background: var(--color-background-secondary); font-size: 13px; color: var(--color-text-primary); cursor: grab; user-select: none; transition: background 0.1s, opacity 0.1s; }
-.task-item:active { cursor: grabbing; }
-.task-item.scheduled { opacity: 0.45; text-decoration: line-through; }
-.task-item .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.task-item .task-name { flex: 1; }
-.task-item .drag-hint { font-size: 11px; color: var(--color-text-tertiary); }
-.color-dot-purple { background: #7F77DD; }
-.color-dot-teal { background: #1D9E75; }
-.color-dot-coral { background: #D85A30; }
-.color-dot-blue { background: #378ADD; }
-.color-dot-amber { background: #BA7517; }
-.color-dot-green { background: #639922; }
-.color-dot-pink { background: #D4537E; }
-.date-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.date-nav button { background: none; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 4px 10px; cursor: pointer; color: var(--color-text-secondary); font-size: 14px; }
-.date-nav button:hover { background: var(--color-background-secondary); }
-.date-nav .date-label { font-size: 14px; font-weight: 500; color: var(--color-text-primary); }
-.stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.stat-card { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 12px; }
-.stat-card .s-label { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 4px; }
-.stat-card .s-val { font-size: 20px; font-weight: 500; color: var(--color-text-primary); }
-.reminder-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 2px 7px; border-radius: 20px; background: #FAEEDA; color: #633806; margin-left: 4px; }
-.drop-hint { font-size: 11px; color: var(--color-text-tertiary); text-align: center; padding: 8px 0 4px; }
-.hour-cell.drag-over { background: #E6F1FB !important; }
-.current-time-line { position: absolute; left: 0; right: 0; height: 2px; background: #D85A30; z-index: 10; pointer-events: none; }
-.current-time-line::before { content: ''; position: absolute; left: -4px; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: #D85A30; }
-</style>
-
-<div class="planner">
-  <div>
-    <div class="date-nav">
-      <button id="prev-day" aria-label="Previous day">&#8592;</button>
-      <span class="date-label" id="date-label"></span>
-      <button id="next-day" aria-label="Next day">&#8594;</button>
-    </div>
-    <div class="time-col" id="time-grid"></div>
-  </div>
-
-  <div class="right-panel">
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="s-label">Scheduled</div>
-        <div class="s-val" id="stat-scheduled">0</div>
-      </div>
-      <div class="stat-card">
-        <div class="s-label">Remaining</div>
-        <div class="s-val" id="stat-remaining">0</div>
-      </div>
-    </div>
-
-    <div class="task-list-panel">
-      <div class="panel-title"><i class="ti ti-list-check" aria-hidden="true"></i> Task list</div>
-      <div class="task-input-row">
-        <input type="text" id="new-task-input" placeholder="Add a task…" maxlength="60" />
-        <button id="add-task-btn" aria-label="Add task">+</button>
-      </div>
-      <div class="task-items" id="task-list"></div>
-      <div class="drop-hint">Drag tasks onto the calendar to schedule them</div>
-    </div>
-  </div>
-</div>
-
-<script>
-const COLORS = ['purple','teal','coral','blue','amber','green','pink'];
-const HOURS = Array.from({length: 15}, (_,i) => i + 7);
-const colorIndex = {};
-
-let currentDate = new Date();
-currentDate.setHours(0,0,0,0);
-let tasks = [
-  {id:1, name:'Review emails', color:'blue', scheduled:false},
-  {id:2, name:'Team standup', color:'teal', scheduled:false},
-  {id:3, name:'Deep work block', color:'purple', scheduled:false},
-  {id:4, name:'Client call prep', color:'coral', scheduled:false},
-  {id:5, name:'Lunch break', color:'amber', scheduled:false},
-];
-let schedule = {};
-let nextId = 6;
-let nextColorIdx = 0;
-let draggingTask = null;
-let reminders = {};
-
-function fmt(d) {
-  return d.toLocaleDateString('en-CA', {weekday:'short', month:'short', day:'numeric'});
-}
-function isToday(d) {
-  const t = new Date(); t.setHours(0,0,0,0);
-  return d.getTime() === t.getTime();
-}
-function dateKey(d) { return d.toISOString().split('T')[0]; }
-
-function renderDateLabel() {
-  const lbl = document.getElementById('date-label');
-  lbl.textContent = isToday(currentDate) ? 'Today — ' + fmt(currentDate) : fmt(currentDate);
-}
-
-function renderStats() {
-  const key = dateKey(currentDate);
-  const daySchedule = schedule[key] || {};
-  const scheduled = Object.values(daySchedule).flat().length;
-  document.getElementById('stat-scheduled').textContent = scheduled;
-  document.getElementById('stat-remaining').textContent = tasks.filter(t => !t.scheduled).length;
-}
-
-function getBlocksForHour(key, hour) {
-  return (schedule[key] && schedule[key][hour]) ? schedule[key][hour] : [];
-}
-
-function renderGrid() {
-  const grid = document.getElementById('time-grid');
-  grid.innerHTML = '';
-  const key = dateKey(currentDate);
-  const now = new Date();
-  const nowHour = now.getHours();
-  const nowMin = now.getMinutes();
-
-  HOURS.forEach(hour => {
-    const row = document.createElement('div');
-    row.className = 'hour-row';
-
-    const label = document.createElement('div');
-    label.className = 'hour-label';
-    const h = hour % 12 || 12;
-    const ampm = hour < 12 ? 'am' : 'pm';
-    label.textContent = h + ampm;
-
-    const cell = document.createElement('div');
-    cell.className = 'hour-cell';
-    cell.dataset.hour = hour;
-
-    if (isToday(currentDate) && nowHour === hour) {
-      const line = document.createElement('div');
-      line.className = 'current-time-line';
-      line.style.top = Math.round((nowMin / 60) * 56) + 'px';
-      cell.appendChild(line);
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Daily Planner</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+        --bg: #f7f6f3; --surface: #ffffff; --surface2: #f0efe9;
+        --border: rgba(0,0,0,0.09); --border2: rgba(0,0,0,0.16);
+        --text: #181816; --text2: #5a5a56; --text3: #b0afa8;
+        --accent: #185FA5; --radius: 10px; --hour-h: 48px;
     }
-
-    const blocks = getBlocksForHour(key, hour);
-    blocks.forEach((taskId, idx) => {
-      const task = tasks.find(t => t.id === taskId);
-      if (!task) return;
-      const block = document.createElement('div');
-      block.className = `task-block color-${task.color}`;
-      const nameSpan = document.createElement('span');
-      nameSpan.textContent = task.name;
-      const reminderKey = key + '_' + hour + '_' + taskId;
-      if (reminders[reminderKey]) {
-        const badge = document.createElement('span');
-        badge.className = 'reminder-badge';
-        badge.innerHTML = '<i class="ti ti-bell" aria-hidden="true" style="font-size:10px"></i>';
-        nameSpan.appendChild(badge);
+    @media (prefers-color-scheme: dark) {
+        :root {
+              --bg: #181816; --surface: #222220; --surface2: #2c2c29;
+              --border: rgba(255,255,255,0.09); --border2: rgba(255,255,255,0.16);
+              --text: #eeecea; --text2: #9a9a94; --text3: #525250;
+        }
+    }
+    html, body { height: 100%; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 15px; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    header { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 12px; }
+    .app-name { font-size: 15px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; white-space: nowrap; }
+    .date-nav { display: flex; align-items: center; gap: 10px; }
+    .date-nav button, .today-btn { background: var(--surface2); border: 0.5px solid var(--border); border-radius: 7px; padding: 4px 12px; cursor: pointer; color: var(--text2); font-size: 13px; transition: background 0.1s; white-space: nowrap; }
+    .date-nav button:hover, .today-btn:hover { background: var(--border2); }
+    .date-label { font-size: 15px; font-weight: 500; color: var(--text); min-width: 200px; text-align: center; }
+    .main { display: grid; grid-template-columns: 1fr 260px; flex: 1; overflow: hidden; min-height: 0; }
+    .cal-wrap { overflow-y: auto; padding: 16px 16px 16px 12px; min-height: 0; }
+    .cal-inner { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .hour-row { display: flex; align-items: stretch; min-height: var(--hour-h); position: relative; }
+    .hour-row + .hour-row .hour-cell { border-top: 0.5px solid var(--border); }
+    .hour-label { width: 62px; flex-shrink: 0; font-size: 14px; font-weight: 500; color: var(--text3); padding: 10px 12px 0 14px; border-right: 0.5px solid var(--border); background: var(--surface2); text-align: right; line-height: 1; }
+    .hour-cell { flex: 1; padding: 5px 10px; cursor: pointer; transition: background 0.1s; position: relative; min-height: var(--hour-h); }
+    .hour-cell:hover { background: var(--surface2); }
+    .hour-cell.drag-over { background: #e6f1fb !important; outline: 1.5px dashed #378ADD; outline-offset: -2px; }
+    .task-block { border-radius: 6px; padding: 5px 10px; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 3px; }
+    .task-block .block-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .task-block .block-actions { display: flex; align-items: center; gap: 2px; opacity: 0; transition: opacity 0.1s; }
+    .task-block:hover .block-actions { opacity: 1; }
+    .task-block button { background: none; border: none; cursor: pointer; font-size: 13px; padding: 0 2px; color: inherit; opacity: 0.7; border-radius: 3px; }
+    .task-block button:hover { opacity: 1; background: rgba(0,0,0,0.08); }
+    .current-line { position: absolute; left: 62px; right: 0; height: 2px; background: #D85A30; z-index: 5; pointer-events: none; }
+    .current-line::before { content: ''; position: absolute; left: -5px; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: #D85A30; }
+    .c-purple .task-block { background: #EEEDFE; color: #3C3489; }
+    .c-teal .task-block { background: #E1F5EE; color: #085041; }
+    .c-coral .task-block { background: #FAECE7; color: #712B13; }
+    .c-blue .task-block { background: #E6F1FB; color: #0C447C; }
+    .c-amber .task-block { background: #FAEEDA; color: #633806; }
+    .c-green .task-block { background: #EAF3DE; color: #27500A; }
+    .c-pink .task-block { background: #FBEAF0; color: #72243E; }
+    .dot-purple { background: #7F77DD; } .dot-teal { background: #1D9E75; } .dot-coral { background: #D85A30; }
+    .dot-blue { background: #378ADD; } .dot-amber { background: #BA7517; } .dot-green { background: #639922; } .dot-pink { background: #D4537E; }
+    .right-panel { border-left: 0.5px solid var(--border); background: var(--surface); display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+    .stats-row { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 0.5px solid var(--border); flex-shrink: 0; }
+    .stat-card { padding: 14px 16px; border-right: 0.5px solid var(--border); }
+    .stat-card:last-child { border-right: none; }
+    .stat-card .s-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+    .stat-card .s-val { font-size: 28px; font-weight: 600; color: var(--text); line-height: 1; }
+    .task-section { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 14px; min-height: 0; }
+    .section-label { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; flex-shrink: 0; }
+    .add-row { display: flex; gap: 6px; margin-bottom: 10px; flex-shrink: 0; }
+    .add-row input { flex: 1; min-width: 0; font-size: 14px; padding: 7px 10px; border-radius: 7px; border: 0.5px solid var(--border2); background: var(--surface2); color: var(--text); outline: none; }
+    .add-row input:focus { border-color: var(--accent); }
+    .add-row input::placeholder { color: var(--text3); }
+    .add-row button { background: var(--accent); border: none; border-radius: 7px; padding: 7px 13px; cursor: pointer; color: #fff; font-size: 20px; line-height: 1; transition: opacity 0.1s; }
+    .add-row button:hover { opacity: 0.85; }
+    .task-list { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; flex: 1; min-height: 0; }
+    .task-item { display: flex; align-items: center; gap: 9px; padding: 9px 12px; border-radius: 7px; border: 0.5px solid var(--border); background: var(--surface2); font-size: 14px; color: var(--text); cursor: grab; user-select: none; transition: opacity 0.15s, background 0.1s; }
+    .task-item:hover { background: var(--border); }
+    .task-item:active { cursor: grabbing; opacity: 0.65; }
+    .task-item.done { opacity: 0.38; text-decoration: line-through; cursor: default; }
+    .task-item.done .grip { display: none; }
+    .color-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .task-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .grip { color: var(--text3); font-size: 14px; flex-shrink: 0; }
+    .hint { font-size: 11px; color: var(--text3); text-align: center; padding: 8px 0 0; flex-shrink: 0; }
+    .reminder-section { border-top: 0.5px solid var(--border); padding: 12px 14px; flex-shrink: 0; }
+    .reminder-list { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; max-height: 90px; overflow-y: auto; }
+    .reminder-item { font-size: 12px; padding: 4px 9px; border-radius: 6px; background: #FAEEDA; color: #633806; display: flex; align-items: center; gap: 6px; }
+    .empty-msg { font-size: 12px; color: var(--text3); margin-top: 6px; }
+    .toast { position: fixed; bottom: 20px; right: 20px; background: var(--surface); border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 10px 14px; font-size: 13px; color: var(--text); box-shadow: 0 4px 16px rgba(0,0,0,0.1); z-index: 999; max-width: 260px; display: none; }
+    .toast .t-title { font-weight: 600; margin-bottom: 1px; font-size: 13px; }
+    .toast .t-body { color: var(--text2); font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <header>
+        <span class="app-name">Daily Planner</span>span>
+        <div class="date-nav">
+              <button id="prev-day">&#8592;</button>button>
+              <span class="date-label" id="date-label"></span>span>
+              <button id="next-day">&#8594;</button>button>
+        </div>div>
+        <button class="today-btn" id="today-btn">Today</button>button>
+    </header>
+    <div class="main">
+        <div class="cal-wrap"><div class="cal-inner" id="calendar"></div>div></div>div>
+        <div class="right-panel">
+              <div class="stats-row">
+                      <div class="stat-card"><div class="s-label">Scheduled</div>div><div class="s-val" id="stat-s">0</div>div></div>div>
+                      <div class="stat-card"><div class="s-label">Remaining</div>div><div class="s-val" id="stat-r">0</div>div></div>div>
+              </div>div>
+              <div class="task-section">
+                      <div class="section-label">Tasks</div>div>
+                      <div class="add-row">
+                                <input type="text" id="task-input" placeholder="Add a task..." maxlength="60" />
+                                <button id="add-btn">+</button>button>
+                      </div>div>
+                      <div class="task-list" id="task-list"></div>div>
+                      <div class="hint">Drag onto a time slot to schedule</div>div>
+              </div>div>
+              <div class="reminder-section">
+                      <div class="section-label">Reminders</div>div>
+                      <div class="reminder-list" id="reminder-list"></div>div>
+              </div>div>
+        </div>div>
+    </div>div>
+    <div class="toast" id="toast"><div class="t-title" id="t-title"></div>div><div class="t-body" id="t-body"></div>div></div>div>
+    <script>
+      const COLORS=['blue','purple','teal','coral','amber','green','pink'];
+      const HOURS=Array.from({length:13},(_,i)=>i+7);
+      const KEY='daily-planner-v2';
+      function load(){try{const r=localStorage.getItem(KEY);if(r)return JSON.parse(r);}catch(e){}return{tasks:[{id:1,name:'Review emails',color:'blue'},{id:2,name:'Team standup',color:'teal'},{id:3,name:'Deep work block',color:'purple'},{id:4,name:'Client call prep',color:'coral'},{id:5,name:'Lunch break',color:'amber'}],schedule:{},reminders:{},nextId:6};}
+      let state=load(),dragging=null,colorIdx=state.tasks.length%COLORS.length;
+      let currentDate=new Date();currentDate.setHours(0,0,0,0);
+      function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+      function dateKey(d){return d.toISOString().split('T')[0];}
+      function isToday(d){const t=new Date();t.setHours(0,0,0,0);return d.getTime()===t.getTime();}
+      function fmtDate(d){const s=d.toLocaleDateString('en-CA',{weekday:'long',month:'long',day:'numeric'});return isToday(d)?'Today - '+s:s;}
+      function fmtHour(h){return(h%12||12)+(h<12?' am':' pm');}
+      function getBlocks(k,h){return(state.schedule[k]&&state.schedule[k][h])||[];}
+      function isScheduledToday(id){const k=dateKey(currentDate);return !!(state.schedule[k]&&Object.values(state.schedule[k]).some(ids=>ids.includes(id)));}
+      function render(){document.getElementById('date-label').textContent=fmtDate(currentDate);renderCal();renderTasks();renderStats();renderReminders();}
+      function renderCal(){
+          const cal=document.getElementById('calendar');cal.innerHTML='';
+          const key=dateKey(currentDate),now=new Date();
+          HOURS.forEach(h=>{
+                const row=document.createElement('div');row.className='hour-row';
+                const lbl=document.createElement('div');lbl.className='hour-label';lbl.textContent=fmtHour(h);
+                const cell=document.createElement('div');cell.className='hour-cell';cell.dataset.hour=h;
+                if(isToday(currentDate)&&now.getHours()===h){const line=document.createElement('div');line.className='current-line';line.style.top=Math.round((now.getMinutes()/60)*48)+'px';row.appendChild(line);}
+                getBlocks(key,h).forEach(tid=>{
+                        const task=state.tasks.find(t=>t.id===tid);if(!task)return;
+                        const rKey=key+'_'+h+'_'+tid,hasRem=!!state.reminders[rKey];
+                        const block=document.createElement('div');block.className='task-block c-'+task.color;
+                        block.innerHTML='<span class="block-name">'+(hasRem?'&#128276; ':'')+task.name+'</span><div class="block-actions"><button data-rk="'+rKey+'">'+(hasRem?'&#128277;':'&#128276;')+'</button><button data-h="'+h+'" data-tid="'+tid+'">&times;</button></div>';
+                        block.querySelector('[data-rk]').addEventListener('click',e=>{const rk=e.currentTarget.dataset.rk;state.reminders[rk]=!state.reminders[rk];if(state.reminders[rk])toast('Reminder set','"'+task.name+'" at '+fmtHour(h));save();render();});
+                        block.querySelector('[data-h]').addEventListener('click',e=>{const hh=parseInt(e.currentTarget.dataset.h),tt=parseInt(e.currentTarget.dataset.tid);state.schedule[key][hh]=state.schedule[key][hh].filter(x=>x!==tt);save();render();});
+                        cell.appendChild(block);
+                });
+                cell.addEventListener('dragover',e=>{e.preventDefault();cell.classList.add('drag-over');});
+                cell.addEventListener('dragleave',()=>cell.classList.remove('drag-over'));
+                cell.addEventListener('drop',e=>{e.preventDefault();cell.classList.remove('drag-over');if(!dragging)return;if(!state.schedule[key])state.schedule[key]={};if(!state.schedule[key][h])state.schedule[key][h]=[];if(!state.schedule[key][h].includes(dragging.id)){state.schedule[key][h].push(dragging.id);toast('Scheduled','"'+dragging.name+'" added at '+fmtHour(h));}dragging=null;save();render();});
+                row.appendChild(lbl);row.appendChild(cell);cal.appendChild(row);
+          });
       }
-      const removeBtn = document.createElement('button');
-      removeBtn.className = 'remove-block';
-      removeBtn.textContent = '×';
-      removeBtn.title = 'Remove from schedule';
-      removeBtn.addEventListener('click', () => {
-        schedule[key][hour] = schedule[key][hour].filter(id => id !== taskId);
-        const t = tasks.find(t => t.id === taskId);
-        if (t) t.scheduled = false;
-        renderGrid();
-        renderTaskList();
-        renderStats();
-      });
-      block.appendChild(nameSpan);
-      block.appendChild(removeBtn);
-      block.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        const rKey = key + '_' + hour + '_' + taskId;
-        reminders[rKey] = !reminders[rKey];
-        renderGrid();
-      });
-      cell.appendChild(block);
-    });
-
-    cell.addEventListener('dragover', e => { e.preventDefault(); cell.classList.add('drag-over'); });
-    cell.addEventListener('dragleave', () => cell.classList.remove('drag-over'));
-    cell.addEventListener('drop', e => {
-      e.preventDefault();
-      cell.classList.remove('drag-over');
-      if (!draggingTask) return;
-      const key2 = dateKey(currentDate);
-      if (!schedule[key2]) schedule[key2] = {};
-      if (!schedule[key2][hour]) schedule[key2][hour] = [];
-      if (!schedule[key2][hour].includes(draggingTask.id)) {
-        schedule[key2][hour].push(draggingTask.id);
-        draggingTask.scheduled = true;
+      function renderTasks(){
+          const list=document.getElementById('task-list');list.innerHTML='';
+          if(!state.tasks.length){list.innerHTML='<div style="font-size:13px;color:var(--text3);padding:8px 0">No tasks yet.</div>';return;}
+          state.tasks.forEach(t=>{
+                const done=isScheduledToday(t.id),el=document.createElement('div');
+                el.className='task-item'+(done?' done':'');el.draggable=!done;
+                el.innerHTML='<div class="color-dot dot-'+t.color+'"></div><span class="task-name">'+t.name+'</span>'+((!done)?'<span class="grip">&#10815;</span>':'<span style="font-size:12px;color:var(--text3)">&#10003;</span>');
+                if(!done){el.addEventListener('dragstart',()=>{dragging=t;});el.addEventListener('dragend',()=>{dragging=null;});}
+                list.appendChild(el);
+          });
       }
-      draggingTask = null;
-      renderGrid();
-      renderTaskList();
-      renderStats();
-    });
-
-    row.appendChild(label);
-    row.appendChild(cell);
-    grid.appendChild(row);
-  });
-}
-
-function renderTaskList() {
-  const list = document.getElementById('task-list');
-  list.innerHTML = '';
-  if (tasks.length === 0) {
-    list.innerHTML = '<div style="font-size:13px;color:var(--color-text-tertiary);text-align:center;padding:16px 0;">No tasks yet. Add one above!</div>';
-    return;
-  }
-  tasks.forEach(task => {
-    const item = document.createElement('div');
-    item.className = 'task-item' + (task.scheduled ? ' scheduled' : '');
-    item.draggable = !task.scheduled;
-    item.innerHTML = `<div class="dot color-dot-${task.color}"></div><span class="task-name">${task.name}</span>${!task.scheduled ? '<span class="drag-hint"><i class="ti ti-grip-vertical" aria-hidden="true"></i></span>' : '<span class="drag-hint" style="font-size:11px;color:var(--color-text-tertiary)">✓</span>'}`;
-    item.addEventListener('dragstart', () => { draggingTask = task; });
-    item.addEventListener('dragend', () => { if (draggingTask) draggingTask = null; });
-    list.appendChild(item);
-  });
-}
-
-document.getElementById('add-task-btn').addEventListener('click', addTask);
-document.getElementById('new-task-input').addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
-
-function addTask() {
-  const input = document.getElementById('new-task-input');
-  const name = input.value.trim();
-  if (!name) return;
-  const color = COLORS[nextColorIdx % COLORS.length];
-  nextColorIdx++;
-  tasks.push({id: nextId++, name, color, scheduled: false});
-  input.value = '';
-  renderTaskList();
-  renderStats();
-}
-
-document.getElementById('prev-day').addEventListener('click', () => {
-  currentDate = new Date(currentDate); currentDate.setDate(currentDate.getDate() - 1);
-  renderDateLabel(); renderGrid(); renderStats();
-});
-document.getElementById('next-day').addEventListener('click', () => {
-  currentDate = new Date(currentDate); currentDate.setDate(currentDate.getDate() + 1);
-  renderDateLabel(); renderGrid(); renderStats();
-});
-
-renderDateLabel();
-renderGrid();
-renderTaskList();
-renderStats();
-
-setInterval(() => { if (isToday(currentDate)) renderGrid(); }, 60000);
-</script>
+      function renderStats(){const k=dateKey(currentDate),d=state.schedule[k]||{},s=new Set(Object.values(d).flat()).size;document.getElementById('stat-s').textContent=s;document.getElementById('stat-r').textContent=state.tasks.filter(t=>!isScheduledToday(t.id)).length;}
+      function renderReminders(){
+          const k=dateKey(currentDate),panel=document.getElementById('reminder-list');panel.innerHTML='';
+          const rems=Object.entries(state.reminders).filter(([k2,v])=>v&&k2.startsWith(k+'_')).map(([k2])=>{const p=k2.split('_'),h=parseInt(p[2]),tid=parseInt(p[3]),t=state.tasks.find(x=>x.id===tid);return t?{h,t}:null;}).filter(Boolean).sort((a,b)=>a.h-b.h);
+          if(!rems.length){panel.innerHTML='<div class="empty-msg">No reminders set.</div>';return;}
+          rems.forEach(({h,t})=>{const el=document.createElement('div');el.className='reminder-item';el.textContent=fmtHour(h)+' - '+t.name;panel.appendChild(el);});
+      }
+      function addTask(){const inp=document.getElementById('task-input'),name=inp.value.trim();if(!name)return;state.tasks.push({id:state.nextId++,name,color:COLORS[colorIdx++%COLORS.length]});inp.value='';save();render();}
+      document.getElementById('add-btn').addEventListener('click',addTask);
+      document.getElementById('task-input').addEventListener('keydown',e=>{if(e.key==='Enter')addTask();});
+      document.getElementById('prev-day').addEventListener('click',()=>{currentDate=new Date(currentDate);currentDate.setDate(currentDate.getDate()-1);render();});
+      document.getElementById('next-day').addEventListener('click',()=>{currentDate=new Date(currentDate);currentDate.setDate(currentDate.getDate()+1);render();});
+      document.getElementById('today-btn').addEventListener('click',()=>{currentDate=new Date();currentDate.setHours(0,0,0,0);render();});
+      let toastTimer;
+      function toast(title,body){const el=document.getElementById('toast');document.getElementById('t-title').textContent=title;document.getElementById('t-body').textContent=body;el.style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.style.display='none',3000);}
+      function scheduleNotifs(){if(!('Notification' in window)||Notification.permission!=='granted')return;const k=dateKey(new Date()),now=new Date();Object.entries(state.reminders).filter(([k2,v])=>v&&k2.startsWith(k+'_')).forEach(([k2])=>{const p=k2.split('_'),h=parseInt(p[2]),tid=parseInt(p[3]),t=state.tasks.find(x=>x.id===tid);if(!t)return;const rt=new Date();rt.setHours(h,0,0,0);const diff=rt-now;if(diff>0&&diff<86400000)setTimeout(()=>new Notification('Planner',{body:t.name+' - '+fmtHour(h)}),diff);});}
+      if('Notification' in window&&Notification.permission==='default')Notification.requestPermission().then(p=>{if(p==='granted')scheduleNotifs();});else scheduleNotifs();
+      setInterval(()=>{if(isToday(currentDate))renderCal();},60000);
+      render();
+    </script>
+  </body>
+</html>html>
+    </script>
+    </header>
+  </body>
+  </style></title>
+  </head>
