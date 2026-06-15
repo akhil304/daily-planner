@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head></head>
-
-
+<head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Daily Planner</title>
@@ -15,7 +13,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 header{background:var(--surface);border-bottom:.5px solid var(--border);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:12px}
 .app-name{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.01em;white-space:nowrap}
 .date-nav{display:flex;align-items:center;gap:10px}
-.nav-btn,.today-btn{background:var(--surface2);border:.5px solid var(--border);border-radius:7px;padding:5px 14px;cursor:pointer;color:var(--text2);font-size:13px;transition:background .1s;white-space:nowrap}
+.nav-btn,.today-btn{background:var(--surface2);border:.5px solid var(--border);border-radius:7px;padding:5px 14px;cursor:pointer;color:var(--text2);font-size:13px;transition:background .1s}
 .nav-btn:hover,.today-btn:hover{background:var(--border2)}
 .date-label{font-size:16px;font-weight:500;color:var(--text);min-width:220px;text-align:center}
 .main{display:grid;grid-template-columns:1fr 270px;flex:1;overflow:hidden;min-height:0}
@@ -80,65 +78,65 @@ header{background:var(--surface);border-bottom:.5px solid var(--border);padding:
 <body>
 <header>
   <span class="app-name">Daily Planner</span>
-    <div class="date-nav">
-        <button class="nav-btn" id="prev">&#8592;</button>
-            <span class="date-label" id="date-label"></span>
-                <button class="nav-btn" id="next">&#8594;</button>
-                  </div>
-                    <button class="today-btn" id="today-btn">Today</button>
-                    </header>
-                    <div class="main">
-                      <div class="cal-wrap"><div class="cal-inner" id="calendar"></div></div>
-                        <div class="right-panel">
-                            <div class="stats-row">
-                                  <div class="stat-card"><div class="s-label">Scheduled</div><div class="s-val" id="stat-s">0</div></div>
-                                        <div class="stat-card"><div class="s-label">Remaining</div><div class="s-val" id="stat-r">0</div></div>
-                                            </div>
-                                                <div class="task-section">
-                                                      <div class="sec-label">Tasks</div>
-                                                            <div class="add-row">
-                                                                    <input type="text" id="task-input" placeholder="Add a task..." maxlength="60" />
-                                                                            <button id="add-btn">+</button>
-                                                                                  </div>
-                                                                                        <div class="task-list" id="task-list"></div>
-                                                                                              <div class="hint">Drag a task onto a time slot to schedule it</div>
-                                                                                                  </div>
-                                                                                                      <div class="rem-section">
-                                                                                                            <div class="sec-label">Reminders</div>
-                                                                                                                  <div class="rem-list" id="rem-list"></div>
-                                                                                                                      </div>
-                                                                                                                        </div>
-                                                                                                                        </div>
-                                                                                                                        <div class="toast" id="toast"><div class="toast-title" id="toast-title"></div><div class="toast-body" id="toast-body"></div></div>
-                                                                                                                        <script>
-                                                                                                                        const COLORS=['blue','purple','teal','coral','amber','green','pink'];
-                                                                                                                        const HOURS=Array.from({length:13},(_,i)=>i+7);
-                                                                                                                        const KEY='dp-v3';
-                                                                                                                        function load(){try{const r=localStorage.getItem(KEY);if(r)return JSON.parse(r);}catch(e){}return{tasks:[{id:1,name:'Review emails',color:'blue'},{id:2,name:'Team standup',color:'teal'},{id:3,name:'Deep work block',color:'purple'},{id:4,name:'Client call prep',color:'coral'},{id:5,name:'Lunch break',color:'amber'}],schedule:{},reminders:{},nextId:6};}
-                                                                                                                        let S=load(),drag=null,ci=S.tasks.length%COLORS.length;
-                                                                                                                        let cur=new Date();cur.setHours(0,0,0,0);
-                                                                                                                        function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
-                                                                                                                        function dk(d){return d.toISOString().split('T')[0]}
-                                                                                                                        function isToday(d){const t=new Date();t.setHours(0,0,0,0);return d.getTime()===t.getTime()}
-                                                                                                                        function fmtDate(d){const s=d.toLocaleDateString('en-CA',{weekday:'long',month:'long',day:'numeric'});return isToday(d)?'Today - '+s:s}
-                                                                                                                        function fmtH(h){return(h%12||12)+(h<12?' am':' pm')}
-                                                                                                                        function blocks(k,h){return(S.schedule[k]&&S.schedule[k][h])||[]}
-                                                                                                                        function scheduledToday(id){const k=dk(cur);return!!(S.schedule[k]&&Object.values(S.schedule[k]).some(a=>a.includes(id)))}
-                                                                                                                        function render(){document.getElementById('date-label').textContent=fmtDate(cur);renderCal();renderTasks();renderStats();renderRem();}
-                                                                                                                        function renderCal(){const cal=document.getElementById('calendar');cal.innerHTML='';const k=dk(cur),now=new Date();HOURS.forEach(h=>{const row=document.createElement('div');row.className='hour-row';const lbl=document.createElement('div');lbl.className='hour-label';lbl.textContent=fmtH(h);const cell=document.createElement('div');cell.className='hour-cell';if(isToday(cur)&&now.getHours()===h){const line=document.createElement('div');line.className='now-line';line.style.top=Math.round(now.getMinutes()/60*52)+'px';row.appendChild(line);}blocks(k,h).forEach(tid=>{const t=S.tasks.find(x=>x.id===tid);if(!t)return;const rk=k+'_'+h+'_'+tid,hasR=!!S.reminders[rk];const b=document.createElement('div');b.className='task-block c-'+t.color;b.innerHTML='<span class="block-name">'+(hasR?'R ':'')+t.name+'</span><div class="block-actions"><button data-rk="'+rk+'">'+(hasR?'off':'R')+'</button><button data-h="'+h+'" data-tid="'+tid+'">x</button></div>';b.querySelector('[data-rk]').onclick=e=>{const rk=e.currentTarget.dataset.rk;S.reminders[rk]=!S.reminders[rk];if(S.reminders[rk])showToast('Reminder set',t.name+' at '+fmtH(h));save();render();};b.querySelector('[data-h]').onclick=e=>{const hh=+e.currentTarget.dataset.h,tt=+e.currentTarget.dataset.tid;S.schedule[k][hh]=S.schedule[k][hh].filter(x=>x!==tt);save();render();};cell.appendChild(b);});cell.ondragover=e=>{e.preventDefault();cell.classList.add('drag-over')};cell.ondragleave=()=>cell.classList.remove('drag-over');cell.ondrop=e=>{e.preventDefault();cell.classList.remove('drag-over');if(!drag)return;if(!S.schedule[k])S.schedule[k]={};if(!S.schedule[k][h])S.schedule[k][h]=[];if(!S.schedule[k][h].includes(drag.id)){S.schedule[k][h].push(drag.id);showToast('Scheduled',drag.name+' at '+fmtH(h));}drag=null;save();render();};row.appendChild(lbl);row.appendChild(cell);cal.appendChild(row);});}
-                                                                                                                        function renderTasks(){const list=document.getElementById('task-list');list.innerHTML='';if(!S.tasks.length){list.innerHTML='<div style="font-size:13px;color:var(--text3);padding:8px 0">No tasks yet.</div>';return;}S.tasks.forEach(t=>{const done=scheduledToday(t.id),el=document.createElement('div');el.className='task-item'+(done?' done':'');el.draggable=!done;el.innerHTML='<div class="cdot d-'+t.color+'"></div><span class="tname">'+t.name+'</span>'+(done?'<span style="font-size:12px;color:var(--text3)">done</span>':'<span class="grip">::</span>');if(!done){el.ondragstart=()=>{drag=t};el.ondragend=()=>{drag=null};}list.appendChild(el);});}
-                                                                                                                        function renderStats(){const k=dk(cur),d=S.schedule[k]||{},s=new Set(Object.values(d).flat()).size;document.getElementById('stat-s').textContent=s;document.getElementById('stat-r').textContent=S.tasks.filter(t=>!scheduledToday(t.id)).length;}
-                                                                                                                        function renderRem(){const k=dk(cur),panel=document.getElementById('rem-list');panel.innerHTML='';const rems=Object.entries(S.reminders).filter(([k2,v])=>v&&k2.startsWith(k+'_')).map(([k2])=>{const p=k2.split('_'),h=+p[2],tid=+p[3],t=S.tasks.find(x=>x.id===tid);return t?{h,t}:null}).filter(Boolean).sort((a,b)=>a.h-b.h);if(!rems.length){panel.innerHTML='<div class="empty-msg">No reminders set.</div>';return;}rems.forEach(({h,t})=>{const el=document.createElement('div');el.className='rem-item';el.textContent=fmtH(h)+' - '+t.name;panel.appendChild(el);});}
-                                                                                                                        function addTask(){const inp=document.getElementById('task-input'),name=inp.value.trim();if(!name)return;S.tasks.push({id:S.nextId++,name,color:COLORS[ci++%COLORS.length]});inp.value='';save();renrender();}
-                                                                                                                        document.getElementById('add-btn').onclick=addTask;
-                                                                                                                        document.getElementById('task-input').onkeydown=e=>{if(e.key==='Enter')addTask()};
-                                                                                                                        document.getElementById('prev').onclick=()=>{cur=new Date(cur);cur.setDate(cur.getDate()-1);render()};
-                                                                                                                        document.getElementById('next').onclick=()=>{cur=new Date(cur);cur.setDate(cur.getDate()+1);render()};
-                                                                                                                        document.getElementById('today-btn').onclick=()=>{cur=new Date();cur.setHours(0,0,0,0);render()};
-                                                                                                                        let toastT;
-                                                                                                                        function showToast(title,body){const el=document.getElementById('toast');document.getElementById('toast-title').textContent=title;document.getElementById('toast-body').textContent=body;el.style.display='block';clearTimeout(toastT);toastT=setTimeout(()=>el.style.display='none',3000);}
-                                                                                                                        setInterval(()=>{if(isToday(cur))renderCal();},60000);
-                                                                                                                        render();
-                                                                                                                        </s</script>
-                                                                                                                        </b</body>
-                                                                                                                        </h</html>
+  <div class="date-nav">
+    <button class="nav-btn" id="prev">&#8592;</button>
+    <span class="date-label" id="date-label"></span>
+    <button class="nav-btn" id="next">&#8594;</button>
+  </div>
+  <button class="today-btn" id="today-btn">Today</button>
+</header>
+<div class="main">
+  <div class="cal-wrap"><div class="cal-inner" id="calendar"></div></div>
+  <div class="right-panel">
+    <div class="stats-row">
+      <div class="stat-card"><div class="s-label">Scheduled</div><div class="s-val" id="stat-s">0</div></div>
+      <div class="stat-card"><div class="s-label">Remaining</div><div class="s-val" id="stat-r">0</div></div>
+    </div>
+    <div class="task-section">
+      <div class="sec-label">Tasks</div>
+      <div class="add-row">
+        <input type="text" id="task-input" placeholder="Add a task..." maxlength="60" />
+        <button id="add-btn">+</button>
+      </div>
+      <div class="task-list" id="task-list"></div>
+      <div class="hint">Drag a task onto a time slot to schedule it</div>
+    </div>
+    <div class="rem-section">
+      <div class="sec-label">Reminders</div>
+      <div class="rem-list" id="rem-list"></div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"><div class="toast-title" id="toast-title"></div><div class="toast-body" id="toast-body"></div></div>
+<script>
+const COLORS=['blue','purple','teal','coral','amber','green','pink'];
+const HOURS=Array.from({length:13},(_,i)=>i+7);
+const KEY='dp-v3';
+function load(){try{const r=localStorage.getItem(KEY);if(r)return JSON.parse(r);}catch(e){}return{tasks:[{id:1,name:'Review emails',color:'blue'},{id:2,name:'Team standup',color:'teal'},{id:3,name:'Deep work block',color:'purple'},{id:4,name:'Client call prep',color:'coral'},{id:5,name:'Lunch break',color:'amber'}],schedule:{},reminders:{},nextId:6};}
+let S=load(),drag=null,ci=S.tasks.length%COLORS.length;
+let cur=new Date();cur.setHours(0,0,0,0);
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+function dk(d){return d.toISOString().split('T')[0]}
+function isToday(d){const t=new Date();t.setHours(0,0,0,0);return d.getTime()===t.getTime()}
+function fmtDate(d){const s=d.toLocaleDateString('en-CA',{weekday:'long',month:'long',day:'numeric'});return isToday(d)?'Today - '+s:s}
+function fmtH(h){return(h%12||12)+(h<12?' am':' pm')}
+function blocks(k,h){return(S.schedule[k]&&S.schedule[k][h])||[]}
+function scheduledToday(id){const k=dk(cur);return!!(S.schedule[k]&&Object.values(S.schedule[k]).some(a=>a.includes(id)))}
+function render(){document.getElementById('date-label').textContent=fmtDate(cur);renderCal();renderTasks();renderStats();renderRem();}
+function renderCal(){const cal=document.getElementById('calendar');cal.innerHTML='';const k=dk(cur),now=new Date();HOURS.forEach(h=>{const row=document.createElement('div');row.className='hour-row';const lbl=document.createElement('div');lbl.className='hour-label';lbl.textContent=fmtH(h);const cell=document.createElement('div');cell.className='hour-cell';if(isToday(cur)&&now.getHours()===h){const line=document.createElement('div');line.className='now-line';line.style.top=Math.round(now.getMinutes()/60*52)+'px';row.appendChild(line);}blocks(k,h).forEach(tid=>{const t=S.tasks.find(x=>x.id===tid);if(!t)return;const rk=k+'_'+h+'_'+tid,hasR=!!S.reminders[rk];const b=document.createElement('div');b.className='task-block c-'+t.color;b.innerHTML='<span class="block-name">'+(hasR?'&#128276; ':'')+t.name+'</span><div class="block-actions"><button data-rk="'+rk+'">'+(hasR?'&#128277;':'&#128276;')+'</button><button data-h="'+h+'" data-tid="'+tid+'">&times;</button></div>';b.querySelector('[data-rk]').onclick=e=>{const rk=e.currentTarget.dataset.rk;S.reminders[rk]=!S.reminders[rk];if(S.reminders[rk])showToast('Reminder set',t.name+' at '+fmtH(h));save();render();};b.querySelector('[data-h]').onclick=e=>{const hh=+e.currentTarget.dataset.h,tt=+e.currentTarget.dataset.tid;S.schedule[k][hh]=S.schedule[k][hh].filter(x=>x!==tt);save();render();};cell.appendChild(b);});cell.ondragover=e=>{e.preventDefault();cell.classList.add('drag-over')};cell.ondragleave=()=>cell.classList.remove('drag-over');cell.ondrop=e=>{e.preventDefault();cell.classList.remove('drag-over');if(!drag)return;if(!S.schedule[k])S.schedule[k]={};if(!S.schedule[k][h])S.schedule[k][h]=[];if(!S.schedule[k][h].includes(drag.id)){S.schedule[k][h].push(drag.id);showToast('Scheduled',drag.name+' at '+fmtH(h));}drag=null;save();render();};row.appendChild(lbl);row.appendChild(cell);cal.appendChild(row);});}
+function renderTasks(){const list=document.getElementById('task-list');list.innerHTML='';if(!S.tasks.length){list.innerHTML='<div style="font-size:13px;color:var(--text3);padding:8px 0">No tasks yet.</div>';return;}S.tasks.forEach(t=>{const done=scheduledToday(t.id),el=document.createElement('div');el.className='task-item'+(done?' done':'');el.draggable=!done;el.innerHTML='<div class="cdot d-'+t.color+'"></div><span class="tname">'+t.name+'</span>'+(done?'<span style="font-size:12px;color:var(--text3)">&#10003;</span>':'<span class="grip">&#10815;</span>');if(!done){el.ondragstart=()=>{drag=t};el.ondragend=()=>{drag=null};}list.appendChild(el);});}
+function renderStats(){const k=dk(cur),d=S.schedule[k]||{},s=new Set(Object.values(d).flat()).size;document.getElementById('stat-s').textContent=s;document.getElementById('stat-r').textContent=S.tasks.filter(t=>!scheduledToday(t.id)).length;}
+function renderRem(){const k=dk(cur),panel=document.getElementById('rem-list');panel.innerHTML='';const rems=Object.entries(S.reminders).filter(([k2,v])=>v&&k2.startsWith(k+'_')).map(([k2])=>{const p=k2.split('_'),h=+p[2],tid=+p[3],t=S.tasks.find(x=>x.id===tid);return t?{h,t}:null}).filter(Boolean).sort((a,b)=>a.h-b.h);if(!rems.length){panel.innerHTML='<div class="empty-msg">No reminders set.</div>';return;}rems.forEach(({h,t})=>{const el=document.createElement('div');el.className='rem-item';el.textContent=fmtH(h)+' - '+t.name;panel.appendChild(el);});}
+function addTask(){const inp=document.getElementById('task-input'),name=inp.value.trim();if(!name)return;S.tasks.push({id:S.nextId++,name,color:COLORS[ci++%COLORS.length]});inp.value='';save();render();}
+document.getElementById('add-btn').onclick=addTask;
+document.getElementById('task-input').onkeydown=e=>{if(e.key==='Enter')addTask()};
+document.getElementById('prev').onclick=()=>{cur=new Date(cur);cur.setDate(cur.getDate()-1);render()};
+document.getElementById('next').onclick=()=>{cur=new Date(cur);cur.setDate(cur.getDate()+1);render()};
+document.getElementById('today-btn').onclick=()=>{cur=new Date();cur.setHours(0,0,0,0);render()};
+let toastT;
+function showToast(title,body){const el=document.getElementById('toast');document.getElementById('toast-title').textContent=title;document.getElementById('toast-body').textContent=body;el.style.display='block';clearTimeout(toastT);toastT=setTimeout(()=>el.style.display='none',3000);}
+setInterval(()=>{if(isToday(cur))renderCal();},60000);
+render();
+</script>
+</body>
+</html>
