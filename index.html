@@ -1,197 +1,142 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Daily Planner</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-        --bg: #f7f6f3; --surface: #ffffff; --surface2: #f0efe9;
-        --border: rgba(0,0,0,0.09); --border2: rgba(0,0,0,0.16);
-        --text: #181816; --text2: #5a5a56; --text3: #b0afa8;
-        --accent: #185FA5; --radius: 10px; --hour-h: 48px;
-    }
-    @media (prefers-color-scheme: dark) {
-        :root {
-              --bg: #181816; --surface: #222220; --surface2: #2c2c29;
-              --border: rgba(255,255,255,0.09); --border2: rgba(255,255,255,0.16);
-              --text: #eeecea; --text2: #9a9a94; --text3: #525250;
-        }
-    }
-    html, body { height: 100%; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 15px; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-    header { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 12px; }
-    .app-name { font-size: 15px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; white-space: nowrap; }
-    .date-nav { display: flex; align-items: center; gap: 10px; }
-    .date-nav button, .today-btn { background: var(--surface2); border: 0.5px solid var(--border); border-radius: 7px; padding: 4px 12px; cursor: pointer; color: var(--text2); font-size: 13px; transition: background 0.1s; white-space: nowrap; }
-    .date-nav button:hover, .today-btn:hover { background: var(--border2); }
-    .date-label { font-size: 15px; font-weight: 500; color: var(--text); min-width: 200px; text-align: center; }
-    .main { display: grid; grid-template-columns: 1fr 260px; flex: 1; overflow: hidden; min-height: 0; }
-    .cal-wrap { overflow-y: auto; padding: 16px 16px 16px 12px; min-height: 0; }
-    .cal-inner { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-    .hour-row { display: flex; align-items: stretch; min-height: var(--hour-h); position: relative; }
-    .hour-row + .hour-row .hour-cell { border-top: 0.5px solid var(--border); }
-    .hour-label { width: 62px; flex-shrink: 0; font-size: 14px; font-weight: 500; color: var(--text3); padding: 10px 12px 0 14px; border-right: 0.5px solid var(--border); background: var(--surface2); text-align: right; line-height: 1; }
-    .hour-cell { flex: 1; padding: 5px 10px; cursor: pointer; transition: background 0.1s; position: relative; min-height: var(--hour-h); }
-    .hour-cell:hover { background: var(--surface2); }
-    .hour-cell.drag-over { background: #e6f1fb !important; outline: 1.5px dashed #378ADD; outline-offset: -2px; }
-    .task-block { border-radius: 6px; padding: 5px 10px; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 3px; }
-    .task-block .block-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .task-block .block-actions { display: flex; align-items: center; gap: 2px; opacity: 0; transition: opacity 0.1s; }
-    .task-block:hover .block-actions { opacity: 1; }
-    .task-block button { background: none; border: none; cursor: pointer; font-size: 13px; padding: 0 2px; color: inherit; opacity: 0.7; border-radius: 3px; }
-    .task-block button:hover { opacity: 1; background: rgba(0,0,0,0.08); }
-    .current-line { position: absolute; left: 62px; right: 0; height: 2px; background: #D85A30; z-index: 5; pointer-events: none; }
-    .current-line::before { content: ''; position: absolute; left: -5px; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: #D85A30; }
-    .c-purple .task-block { background: #EEEDFE; color: #3C3489; }
-    .c-teal .task-block { background: #E1F5EE; color: #085041; }
-    .c-coral .task-block { background: #FAECE7; color: #712B13; }
-    .c-blue .task-block { background: #E6F1FB; color: #0C447C; }
-    .c-amber .task-block { background: #FAEEDA; color: #633806; }
-    .c-green .task-block { background: #EAF3DE; color: #27500A; }
-    .c-pink .task-block { background: #FBEAF0; color: #72243E; }
-    .dot-purple { background: #7F77DD; } .dot-teal { background: #1D9E75; } .dot-coral { background: #D85A30; }
-    .dot-blue { background: #378ADD; } .dot-amber { background: #BA7517; } .dot-green { background: #639922; } .dot-pink { background: #D4537E; }
-    .right-panel { border-left: 0.5px solid var(--border); background: var(--surface); display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
-    .stats-row { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 0.5px solid var(--border); flex-shrink: 0; }
-    .stat-card { padding: 14px 16px; border-right: 0.5px solid var(--border); }
-    .stat-card:last-child { border-right: none; }
-    .stat-card .s-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
-    .stat-card .s-val { font-size: 28px; font-weight: 600; color: var(--text); line-height: 1; }
-    .task-section { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 14px; min-height: 0; }
-    .section-label { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; flex-shrink: 0; }
-    .add-row { display: flex; gap: 6px; margin-bottom: 10px; flex-shrink: 0; }
-    .add-row input { flex: 1; min-width: 0; font-size: 14px; padding: 7px 10px; border-radius: 7px; border: 0.5px solid var(--border2); background: var(--surface2); color: var(--text); outline: none; }
-    .add-row input:focus { border-color: var(--accent); }
-    .add-row input::placeholder { color: var(--text3); }
-    .add-row button { background: var(--accent); border: none; border-radius: 7px; padding: 7px 13px; cursor: pointer; color: #fff; font-size: 20px; line-height: 1; transition: opacity 0.1s; }
-    .add-row button:hover { opacity: 0.85; }
-    .task-list { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; flex: 1; min-height: 0; }
-    .task-item { display: flex; align-items: center; gap: 9px; padding: 9px 12px; border-radius: 7px; border: 0.5px solid var(--border); background: var(--surface2); font-size: 14px; color: var(--text); cursor: grab; user-select: none; transition: opacity 0.15s, background 0.1s; }
-    .task-item:hover { background: var(--border); }
-    .task-item:active { cursor: grabbing; opacity: 0.65; }
-    .task-item.done { opacity: 0.38; text-decoration: line-through; cursor: default; }
-    .task-item.done .grip { display: none; }
-    .color-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-    .task-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .grip { color: var(--text3); font-size: 14px; flex-shrink: 0; }
-    .hint { font-size: 11px; color: var(--text3); text-align: center; padding: 8px 0 0; flex-shrink: 0; }
-    .reminder-section { border-top: 0.5px solid var(--border); padding: 12px 14px; flex-shrink: 0; }
-    .reminder-list { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; max-height: 90px; overflow-y: auto; }
-    .reminder-item { font-size: 12px; padding: 4px 9px; border-radius: 6px; background: #FAEEDA; color: #633806; display: flex; align-items: center; gap: 6px; }
-    .empty-msg { font-size: 12px; color: var(--text3); margin-top: 6px; }
-    .toast { position: fixed; bottom: 20px; right: 20px; background: var(--surface); border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 10px 14px; font-size: 13px; color: var(--text); box-shadow: 0 4px 16px rgba(0,0,0,0.1); z-index: 999; max-width: 260px; display: none; }
-    .toast .t-title { font-weight: 600; margin-bottom: 1px; font-size: 13px; }
-    .toast .t-body { color: var(--text2); font-size: 12px; }
-    </style>
-  </head>
-  <body>
-    <header>
-        <span class="app-name">Daily Planner</span>span>
-        <div class="date-nav">
-              <button id="prev-day">&#8592;</button>button>
-              <span class="date-label" id="date-label"></span>span>
-              <button id="next-day">&#8594;</button>button>
-        </div>div>
-        <button class="today-btn" id="today-btn">Today</button>button>
-    </header>
-    <div class="main">
-        <div class="cal-wrap"><div class="cal-inner" id="calendar"></div>div></div>div>
-        <div class="right-panel">
-              <div class="stats-row">
-                      <div class="stat-card"><div class="s-label">Scheduled</div>div><div class="s-val" id="stat-s">0</div>div></div>div>
-                      <div class="stat-card"><div class="s-label">Remaining</div>div><div class="s-val" id="stat-r">0</div>div></div>div>
-              </div>div>
-              <div class="task-section">
-                      <div class="section-label">Tasks</div>div>
-                      <div class="add-row">
-                                <input type="text" id="task-input" placeholder="Add a task..." maxlength="60" />
-                                <button id="add-btn">+</button>button>
-                      </div>div>
-                      <div class="task-list" id="task-list"></div>div>
-                      <div class="hint">Drag onto a time slot to schedule</div>div>
-              </div>div>
-              <div class="reminder-section">
-                      <div class="section-label">Reminders</div>div>
-                      <div class="reminder-list" id="reminder-list"></div>div>
-              </div>div>
-        </div>div>
-    </div>div>
-    <div class="toast" id="toast"><div class="t-title" id="t-title"></div>div><div class="t-body" id="t-body"></div>div></div>div>
-    <script>
-      const COLORS=['blue','purple','teal','coral','amber','green','pink'];
-      const HOURS=Array.from({length:13},(_,i)=>i+7);
-      const KEY='daily-planner-v2';
-      function load(){try{const r=localStorage.getItem(KEY);if(r)return JSON.parse(r);}catch(e){}return{tasks:[{id:1,name:'Review emails',color:'blue'},{id:2,name:'Team standup',color:'teal'},{id:3,name:'Deep work block',color:'purple'},{id:4,name:'Client call prep',color:'coral'},{id:5,name:'Lunch break',color:'amber'}],schedule:{},reminders:{},nextId:6};}
-      let state=load(),dragging=null,colorIdx=state.tasks.length%COLORS.length;
-      let currentDate=new Date();currentDate.setHours(0,0,0,0);
-      function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
-      function dateKey(d){return d.toISOString().split('T')[0];}
-      function isToday(d){const t=new Date();t.setHours(0,0,0,0);return d.getTime()===t.getTime();}
-      function fmtDate(d){const s=d.toLocaleDateString('en-CA',{weekday:'long',month:'long',day:'numeric'});return isToday(d)?'Today - '+s:s;}
-      function fmtHour(h){return(h%12||12)+(h<12?' am':' pm');}
-      function getBlocks(k,h){return(state.schedule[k]&&state.schedule[k][h])||[];}
-      function isScheduledToday(id){const k=dateKey(currentDate);return !!(state.schedule[k]&&Object.values(state.schedule[k]).some(ids=>ids.includes(id)));}
-      function render(){document.getElementById('date-label').textContent=fmtDate(currentDate);renderCal();renderTasks();renderStats();renderReminders();}
-      function renderCal(){
-          const cal=document.getElementById('calendar');cal.innerHTML='';
-          const key=dateKey(currentDate),now=new Date();
-          HOURS.forEach(h=>{
-                const row=document.createElement('div');row.className='hour-row';
-                const lbl=document.createElement('div');lbl.className='hour-label';lbl.textContent=fmtHour(h);
-                const cell=document.createElement('div');cell.className='hour-cell';cell.dataset.hour=h;
-                if(isToday(currentDate)&&now.getHours()===h){const line=document.createElement('div');line.className='current-line';line.style.top=Math.round((now.getMinutes()/60)*48)+'px';row.appendChild(line);}
-                getBlocks(key,h).forEach(tid=>{
-                        const task=state.tasks.find(t=>t.id===tid);if(!task)return;
-                        const rKey=key+'_'+h+'_'+tid,hasRem=!!state.reminders[rKey];
-                        const block=document.createElement('div');block.className='task-block c-'+task.color;
-                        block.innerHTML='<span class="block-name">'+(hasRem?'&#128276; ':'')+task.name+'</span><div class="block-actions"><button data-rk="'+rKey+'">'+(hasRem?'&#128277;':'&#128276;')+'</button><button data-h="'+h+'" data-tid="'+tid+'">&times;</button></div>';
-                        block.querySelector('[data-rk]').addEventListener('click',e=>{const rk=e.currentTarget.dataset.rk;state.reminders[rk]=!state.reminders[rk];if(state.reminders[rk])toast('Reminder set','"'+task.name+'" at '+fmtHour(h));save();render();});
-                        block.querySelector('[data-h]').addEventListener('click',e=>{const hh=parseInt(e.currentTarget.dataset.h),tt=parseInt(e.currentTarget.dataset.tid);state.schedule[key][hh]=state.schedule[key][hh].filter(x=>x!==tt);save();render();});
-                        cell.appendChild(block);
-                });
-                cell.addEventListener('dragover',e=>{e.preventDefault();cell.classList.add('drag-over');});
-                cell.addEventListener('dragleave',()=>cell.classList.remove('drag-over'));
-                cell.addEventListener('drop',e=>{e.preventDefault();cell.classList.remove('drag-over');if(!dragging)return;if(!state.schedule[key])state.schedule[key]={};if(!state.schedule[key][h])state.schedule[key][h]=[];if(!state.schedule[key][h].includes(dragging.id)){state.schedule[key][h].push(dragging.id);toast('Scheduled','"'+dragging.name+'" added at '+fmtHour(h));}dragging=null;save();render();});
-                row.appendChild(lbl);row.appendChild(cell);cal.appendChild(row);
-          });
-      }
-      function renderTasks(){
-          const list=document.getElementById('task-list');list.innerHTML='';
-          if(!state.tasks.length){list.innerHTML='<div style="font-size:13px;color:var(--text3);padding:8px 0">No tasks yet.</div>';return;}
-          state.tasks.forEach(t=>{
-                const done=isScheduledToday(t.id),el=document.createElement('div');
-                el.className='task-item'+(done?' done':'');el.draggable=!done;
-                el.innerHTML='<div class="color-dot dot-'+t.color+'"></div><span class="task-name">'+t.name+'</span>'+((!done)?'<span class="grip">&#10815;</span>':'<span style="font-size:12px;color:var(--text3)">&#10003;</span>');
-                if(!done){el.addEventListener('dragstart',()=>{dragging=t;});el.addEventListener('dragend',()=>{dragging=null;});}
-                list.appendChild(el);
-          });
-      }
-      function renderStats(){const k=dateKey(currentDate),d=state.schedule[k]||{},s=new Set(Object.values(d).flat()).size;document.getElementById('stat-s').textContent=s;document.getElementById('stat-r').textContent=state.tasks.filter(t=>!isScheduledToday(t.id)).length;}
-      function renderReminders(){
-          const k=dateKey(currentDate),panel=document.getElementById('reminder-list');panel.innerHTML='';
-          const rems=Object.entries(state.reminders).filter(([k2,v])=>v&&k2.startsWith(k+'_')).map(([k2])=>{const p=k2.split('_'),h=parseInt(p[2]),tid=parseInt(p[3]),t=state.tasks.find(x=>x.id===tid);return t?{h,t}:null;}).filter(Boolean).sort((a,b)=>a.h-b.h);
-          if(!rems.length){panel.innerHTML='<div class="empty-msg">No reminders set.</div>';return;}
-          rems.forEach(({h,t})=>{const el=document.createElement('div');el.className='reminder-item';el.textContent=fmtHour(h)+' - '+t.name;panel.appendChild(el);});
-      }
-      function addTask(){const inp=document.getElementById('task-input'),name=inp.value.trim();if(!name)return;state.tasks.push({id:state.nextId++,name,color:COLORS[colorIdx++%COLORS.length]});inp.value='';save();render();}
-      document.getElementById('add-btn').addEventListener('click',addTask);
-      document.getElementById('task-input').addEventListener('keydown',e=>{if(e.key==='Enter')addTask();});
-      document.getElementById('prev-day').addEventListener('click',()=>{currentDate=new Date(currentDate);currentDate.setDate(currentDate.getDate()-1);render();});
-      document.getElementById('next-day').addEventListener('click',()=>{currentDate=new Date(currentDate);currentDate.setDate(currentDate.getDate()+1);render();});
-      document.getElementById('today-btn').addEventListener('click',()=>{currentDate=new Date();currentDate.setHours(0,0,0,0);render();});
-      let toastTimer;
-      function toast(title,body){const el=document.getElementById('toast');document.getElementById('t-title').textContent=title;document.getElementById('t-body').textContent=body;el.style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.style.display='none',3000);}
-      function scheduleNotifs(){if(!('Notification' in window)||Notification.permission!=='granted')return;const k=dateKey(new Date()),now=new Date();Object.entries(state.reminders).filter(([k2,v])=>v&&k2.startsWith(k+'_')).forEach(([k2])=>{const p=k2.split('_'),h=parseInt(p[2]),tid=parseInt(p[3]),t=state.tasks.find(x=>x.id===tid);if(!t)return;const rt=new Date();rt.setHours(h,0,0,0);const diff=rt-now;if(diff>0&&diff<86400000)setTimeout(()=>new Notification('Planner',{body:t.name+' - '+fmtHour(h)}),diff);});}
-      if('Notification' in window&&Notification.permission==='default')Notification.requestPermission().then(p=>{if(p==='granted')scheduleNotifs();});else scheduleNotifs();
-      setInterval(()=>{if(isToday(currentDate))renderCal();},60000);
-      render();
-    </script>
-  </body>
-</html>html>
-    </script>
-    </header>
-  </body>
-  </style></title>
-  </head>
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Daily Planner</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#f7f6f3;--surface:#fff;--surface2:#f0efe9;--border:rgba(0,0,0,.09);--border2:rgba(0,0,0,.16);--text:#181816;--text2:#5a5a56;--text3:#b0afa8;--accent:#185FA5;--r:10px;--hh:52px}
+@media(prefers-color-scheme:dark){:root{--bg:#181816;--surface:#222220;--surface2:#2c2c29;--border:rgba(255,255,255,.09);--border2:rgba(255,255,255,.16);--text:#eeecea;--text2:#9a9a94;--text3:#525250}}
+html,body{height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:15px;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+header{background:var(--surface);border-bottom:.5px solid var(--border);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:12px}
+.app-name{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.01em;white-space:nowrap}
+.date-nav{display:flex;align-items:center;gap:10px}
+.nav-btn,.today-btn{background:var(--surface2);border:.5px solid var(--border);border-radius:7px;padding:5px 14px;cursor:pointer;color:var(--text2);font-size:13px;transition:background .1s;white-space:nowrap}
+.nav-btn:hover,.today-btn:hover{background:var(--border2)}
+.date-label{font-size:16px;font-weight:500;color:var(--text);min-width:220px;text-align:center}
+.main{display:grid;grid-template-columns:1fr 270px;flex:1;overflow:hidden;min-height:0}
+.cal-wrap{overflow-y:auto;padding:14px;min-height:0}
+.cal-inner{background:var(--surface);border:.5px solid var(--border);border-radius:var(--r);overflow:hidden}
+.hour-row{display:flex;align-items:stretch;min-height:var(--hh);position:relative}
+.hour-row+.hour-row .hour-cell{border-top:.5px solid var(--border)}
+.hour-label{width:64px;flex-shrink:0;font-size:14px;font-weight:600;color:var(--text3);padding:12px 12px 0;border-right:.5px solid var(--border);background:var(--surface2);text-align:right;line-height:1}
+.hour-cell{flex:1;padding:5px 10px;cursor:pointer;transition:background .1s;position:relative;min-height:var(--hh)}
+.hour-cell:hover{background:var(--surface2)}
+.hour-cell.drag-over{background:#e6f1fb!important;outline:1.5px dashed #378ADD;outline-offset:-2px}
+.task-block{border-radius:6px;padding:5px 10px;font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:3px}
+.block-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.block-actions{display:flex;align-items:center;gap:2px;opacity:0;transition:opacity .1s}
+.task-block:hover .block-actions{opacity:1}
+.task-block button{background:none;border:none;cursor:pointer;font-size:13px;padding:0 2px;color:inherit;opacity:.7;border-radius:3px}
+.task-block button:hover{opacity:1;background:rgba(0,0,0,.08)}
+.now-line{position:absolute;left:64px;right:0;height:2px;background:#D85A30;z-index:5;pointer-events:none}
+.now-line::before{content:'';position:absolute;left:-5px;top:-4px;width:10px;height:10px;border-radius:50%;background:#D85A30}
+.c-purple .task-block{background:#EEEDFE;color:#3C3489}
+.c-teal .task-block{background:#E1F5EE;color:#085041}
+.c-coral .task-block{background:#FAECE7;color:#712B13}
+.c-blue .task-block{background:#E6F1FB;color:#0C447C}
+.c-amber .task-block{background:#FAEEDA;color:#633806}
+.c-green .task-block{background:#EAF3DE;color:#27500A}
+.c-pink .task-block{background:#FBEAF0;color:#72243E}
+.d-purple{background:#7F77DD}.d-teal{background:#1D9E75}.d-coral{background:#D85A30}
+.d-blue{background:#378ADD}.d-amber{background:#BA7517}.d-green{background:#639922}.d-pink{background:#D4537E}
+.right-panel{border-left:.5px solid var(--border);background:var(--surface);display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.stats-row{display:grid;grid-template-columns:1fr 1fr;border-bottom:.5px solid var(--border);flex-shrink:0}
+.stat-card{padding:14px 16px;border-right:.5px solid var(--border)}
+.stat-card:last-child{border-right:none}
+.s-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.s-val{font-size:30px;font-weight:700;color:var(--text);line-height:1}
+.task-section{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:14px;min-height:0}
+.sec-label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;flex-shrink:0}
+.add-row{display:flex;gap:6px;margin-bottom:10px;flex-shrink:0}
+.add-row input{flex:1;min-width:0;font-size:14px;padding:8px 10px;border-radius:7px;border:.5px solid var(--border2);background:var(--surface2);color:var(--text);outline:none}
+.add-row input:focus{border-color:var(--accent)}
+.add-row input::placeholder{color:var(--text3)}
+.add-row button{background:var(--accent);border:none;border-radius:7px;padding:8px 14px;cursor:pointer;color:#fff;font-size:22px;line-height:1;transition:opacity .1s}
+.add-row button:hover{opacity:.85}
+.task-list{display:flex;flex-direction:column;gap:6px;overflow-y:auto;flex:1;min-height:0}
+.task-item{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:7px;border:.5px solid var(--border);background:var(--surface2);font-size:14px;color:var(--text);cursor:grab;user-select:none;transition:opacity .15s,background .1s}
+.task-item:hover{background:var(--border)}
+.task-item:active{cursor:grabbing;opacity:.65}
+.task-item.done{opacity:.35;text-decoration:line-through;cursor:default}
+.task-item.done .grip{display:none}
+.cdot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.tname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.grip{color:var(--text3);font-size:14px;flex-shrink:0}
+.hint{font-size:11px;color:var(--text3);text-align:center;padding:8px 0 0;flex-shrink:0}
+.rem-section{border-top:.5px solid var(--border);padding:12px 14px;flex-shrink:0}
+.rem-list{display:flex;flex-direction:column;gap:4px;margin-top:8px;max-height:90px;overflow-y:auto}
+.rem-item{font-size:12px;padding:4px 9px;border-radius:6px;background:#FAEEDA;color:#633806}
+.empty-msg{font-size:12px;color:var(--text3);margin-top:6px}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--surface);border:.5px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-size:13px;color:var(--text);box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:999;max-width:260px;display:none}
+.toast-title{font-weight:700;margin-bottom:1px;font-size:13px}
+.toast-body{color:var(--text2);font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <span class="app-name">Daily Planner</span>
+    <div class="date-nav">
+        <button class="nav-btn" id="prev">&#8592;</button>
+            <span class="date-label" id="date-label"></span>
+                <button class="nav-btn" id="next">&#8594;</button>
+                  </div>
+                    <button class="today-btn" id="today-btn">Today</button>
+                    </header>
+                    <div class="main">
+                      <div class="cal-wrap"><div class="cal-inner" id="calendar"></div></div>
+                        <div class="right-panel">
+                            <div class="stats-row">
+                                  <div class="stat-card"><div class="s-label">Scheduled</div><div class="s-val" id="stat-s">0</div></div>
+                                        <div class="stat-card"><div class="s-label">Remaining</div><div class="s-val" id="stat-r">0</div></div>
+                                            </div>
+                                                <div class="task-section">
+                                                      <div class="sec-label">Tasks</div>
+                                                            <div class="add-row">
+                                                                    <input type="text" id="task-input" placeholder="Add a task..." maxlength="60" />
+                                                                            <button id="add-btn">+</button>
+                                                                                  </div>
+                                                                                        <div class="task-list" id="task-list"></div>
+                                                                                              <div class="hint">Drag a task onto a time slot to schedule it</div>
+                                                                                                  </div>
+                                                                                                      <div class="rem-section">
+                                                                                                            <div class="sec-label">Reminders</div>
+                                                                                                                  <div class="rem-list" id="rem-list"></div>
+                                                                                                                      </div>
+                                                                                                                        </div>
+                                                                                                                        </div>
+                                                                                                                        <div class="toast" id="toast"><div class="toast-title" id="toast-title"></div><div class="toast-body" id="toast-body"></div></div>
+                                                                                                                        <script>
+                                                                                                                        const COLORS=['blue','purple','teal','coral','amber','green','pink'];
+                                                                                                                        const HOURS=Array.from({length:13},(_,i)=>i+7);
+                                                                                                                        const KEY='dp-v3';
+                                                                                                                        function load(){try{const r=localStorage.getItem(KEY);if(r)return JSON.parse(r);}catch(e){}return{tasks:[{id:1,name:'Review emails',color:'blue'},{id:2,name:'Team standup',color:'teal'},{id:3,name:'Deep work block',color:'purple'},{id:4,name:'Client call prep',color:'coral'},{id:5,name:'Lunch break',color:'amber'}],schedule:{},reminders:{},nextId:6};}
+                                                                                                                        let S=load(),drag=null,ci=S.tasks.length%COLORS.length;
+                                                                                                                        let cur=new Date();cur.setHours(0,0,0,0);
+                                                                                                                        function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+                                                                                                                        function dk(d){return d.toISOString().split('T')[0]}
+                                                                                                                        function isToday(d){const t=new Date();t.setHours(0,0,0,0);return d.getTime()===t.getTime()}
+                                                                                                                        function fmtDate(d){const s=d.toLocaleDateString('en-CA',{weekday:'long',month:'long',day:'numeric'});return isToday(d)?'Today - '+s:s}
+                                                                                                                        function fmtH(h){return(h%12||12)+(h<12?' am':' pm')}
+                                                                                                                        function blocks(k,h){return(S.schedule[k]&&S.schedule[k][h])||[]}
+                                                                                                                        function scheduledToday(id){const k=dk(cur);return!!(S.schedule[k]&&Object.values(S.schedule[k]).some(a=>a.includes(id)))}
+                                                                                                                        function render(){document.getElementById('date-label').textContent=fmtDate(cur);renderCal();renderTasks();renderStats();renderRem();}
+                                                                                                                        function renderCal(){const cal=document.getElementById('calendar');cal.innerHTML='';const k=dk(cur),now=new Date();HOURS.forEach(h=>{const row=document.createElement('div');row.className='hour-row';const lbl=document.createElement('div');lbl.className='hour-label';lbl.textContent=fmtH(h);const cell=document.createElement('div');cell.className='hour-cell';if(isToday(cur)&&now.getHours()===h){const line=document.createElement('div');line.className='now-line';line.style.top=Math.round(now.getMinutes()/60*52)+'px';row.appendChild(line);}blocks(k,h).forEach(tid=>{const t=S.tasks.find(x=>x.id===tid);if(!t)return;const rk=k+'_'+h+'_'+tid,hasR=!!S.reminders[rk];const b=document.createElement('div');b.className='task-block c-'+t.color;b.innerHTML='<span class="block-name">'+(hasR?'R ':'')+t.name+'</span><div class="block-actions"><button data-rk="'+rk+'">'+(hasR?'off':'R')+'</button><button data-h="'+h+'" data-tid="'+tid+'">x</button></div>';b.querySelector('[data-rk]').onclick=e=>{const rk=e.currentTarget.dataset.rk;S.reminders[rk]=!S.reminders[rk];if(S.reminders[rk])showToast('Reminder set',t.name+' at '+fmtH(h));save();render();};b.querySelector('[data-h]').onclick=e=>{const hh=+e.currentTarget.dataset.h,tt=+e.currentTarget.dataset.tid;S.schedule[k][hh]=S.schedule[k][hh].filter(x=>x!==tt);save();render();};cell.appendChild(b);});cell.ondragover=e=>{e.preventDefault();cell.classList.add('drag-over')};cell.ondragleave=()=>cell.classList.remove('drag-over');cell.ondrop=e=>{e.preventDefault();cell.classList.remove('drag-over');if(!drag)return;if(!S.schedule[k])S.schedule[k]={};if(!S.schedule[k][h])S.schedule[k][h]=[];if(!S.schedule[k][h].includes(drag.id)){S.schedule[k][h].push(drag.id);showToast('Scheduled',drag.name+' at '+fmtH(h));}drag=null;save();render();};row.appendChild(lbl);row.appendChild(cell);cal.appendChild(row);});}
+                                                                                                                        function renderTasks(){const list=document.getElementById('task-list');list.innerHTML='';if(!S.tasks.length){list.innerHTML='<div style="font-size:13px;color:var(--text3);padding:8px 0">No tasks yet.</div>';return;}S.tasks.forEach(t=>{const done=scheduledToday(t.id),el=document.createElement('div');el.className='task-item'+(done?' done':'');el.draggable=!done;el.innerHTML='<div class="cdot d-'+t.color+'"></div><span class="tname">'+t.name+'</span>'+(done?'<span style="font-size:12px;color:var(--text3)">done</span>':'<span class="grip">::</span>');if(!done){el.ondragstart=()=>{drag=t};el.ondragend=()=>{drag=null};}list.appendChild(el);});}
+                                                                                                                        function renderStats(){const k=dk(cur),d=S.schedule[k]||{},s=new Set(Object.values(d).flat()).size;document.getElementById('stat-s').textContent=s;document.getElementById('stat-r').textContent=S.tasks.filter(t=>!scheduledToday(t.id)).length;}
+                                                                                                                        function renderRem(){const k=dk(cur),panel=document.getElementById('rem-list');panel.innerHTML='';const rems=Object.entries(S.reminders).filter(([k2,v])=>v&&k2.startsWith(k+'_')).map(([k2])=>{const p=k2.split('_'),h=+p[2],tid=+p[3],t=S.tasks.find(x=>x.id===tid);return t?{h,t}:null}).filter(Boolean).sort((a,b)=>a.h-b.h);if(!rems.length){panel.innerHTML='<div class="empty-msg">No reminders set.</div>';return;}rems.forEach(({h,t})=>{const el=document.createElement('div');el.className='rem-item';el.textContent=fmtH(h)+' - '+t.name;panel.appendChild(el);});}
+                                                                                                                        function addTask(){const inp=document.getElementById('task-input'),name=inp.value.trim();if(!name)return;S.tasks.push({id:S.nextId++,name,color:COLORS[ci++%COLORS.length]});inp.value='';save();render();}
+                                                                                                                        document.getElementById('add-btn').onclick=addTask;
+                                                                                                                        document.getElementById('task-input').onkeydown=e=>{if(e.key==='Enter')addTask()};
+                                                                                                                        document.getElementById('prev').onclick=()=>{cur=new Date(cur);cur.setDate(cur.getDate()-1);render()};
+                                                                                                                        document.getElementById('next').onclick=()=>{cur=new Date(cur);cur.setDate(cur.getDate()+1);render()};
+                                                                                                                        document.getElementById('today-btn').onclick=()=>{cur=new Date();cur.setHours(0,0,0,0);render()};
+                                                                                                                        let toastT;
+                                                                                                                        function showToast(title,body){const el=document.getElementById('toast');document.getElementById('toast-title').textContent=title;document.getElementById('toast-body').textContent=body;el.style.display='block';clearTimeout(toastT);toastT=setTimeout(()=>el.style.display='none',3000);}
+                                                                                                                        setInterval(()=>{if(isToday(cur))renderCal();},60000);
+                                                                                                                        render();
+                                                                                                                        </script>
+                                                                                                                        </body>
+                                                                                                                        </html>
