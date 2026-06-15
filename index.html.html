@@ -1,0 +1,281 @@
+
+<h2 class="sr-only">Interactive daily hourly planner with task list and calendar time blocks</h2>
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); }
+.planner { display: grid; grid-template-columns: 1fr 280px; gap: 16px; padding: 1rem 0; min-height: 600px; }
+.panel-title { font-size: 13px; font-weight: 500; color: var(--color-text-secondary); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 10px; }
+.time-col { display: flex; flex-direction: column; gap: 0; }
+.hour-row { display: flex; align-items: stretch; min-height: 56px; position: relative; }
+.hour-label { width: 52px; flex-shrink: 0; font-size: 12px; color: var(--color-text-tertiary); padding-top: 4px; text-align: right; padding-right: 10px; line-height: 1; }
+.hour-cell { flex: 1; border-top: 0.5px solid var(--color-border-tertiary); position: relative; cursor: pointer; transition: background 0.1s; padding: 4px 6px; min-height: 56px; }
+.hour-cell:hover { background: var(--color-background-secondary); }
+.hour-cell.has-block { cursor: default; }
+.task-block { border-radius: 6px; padding: 5px 8px; font-size: 12px; font-weight: 500; position: relative; margin-bottom: 2px; display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.task-block .remove-block { opacity: 0; background: none; border: none; cursor: pointer; font-size: 14px; color: inherit; padding: 0 2px; line-height: 1; transition: opacity 0.1s; }
+.task-block:hover .remove-block { opacity: 0.7; }
+.color-purple .task-block { background: #EEEDFE; color: #3C3489; }
+.color-teal .task-block { background: #E1F5EE; color: #085041; }
+.color-coral .task-block { background: #FAECE7; color: #712B13; }
+.color-blue .task-block { background: #E6F1FB; color: #0C447C; }
+.color-amber .task-block { background: #FAEEDA; color: #633806; }
+.color-green .task-block { background: #EAF3DE; color: #27500A; }
+.color-pink .task-block { background: #FBEAF0; color: #72243E; }
+.right-panel { display: flex; flex-direction: column; gap: 16px; }
+.task-list-panel { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 14px; flex: 1; display: flex; flex-direction: column; }
+.task-input-row { display: flex; gap: 6px; margin-bottom: 10px; }
+.task-input-row input { flex: 1; font-size: 13px; padding: 6px 10px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: var(--color-background-secondary); color: var(--color-text-primary); min-width: 0; }
+.task-input-row input:focus { outline: none; border-color: var(--color-border-primary); }
+.task-input-row button { font-size: 18px; padding: 4px 10px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: none; cursor: pointer; color: var(--color-text-secondary); flex-shrink: 0; }
+.task-input-row button:hover { background: var(--color-background-secondary); }
+.task-items { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; max-height: 320px; flex: 1; }
+.task-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-tertiary); background: var(--color-background-secondary); font-size: 13px; color: var(--color-text-primary); cursor: grab; user-select: none; transition: background 0.1s, opacity 0.1s; }
+.task-item:active { cursor: grabbing; }
+.task-item.scheduled { opacity: 0.45; text-decoration: line-through; }
+.task-item .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.task-item .task-name { flex: 1; }
+.task-item .drag-hint { font-size: 11px; color: var(--color-text-tertiary); }
+.color-dot-purple { background: #7F77DD; }
+.color-dot-teal { background: #1D9E75; }
+.color-dot-coral { background: #D85A30; }
+.color-dot-blue { background: #378ADD; }
+.color-dot-amber { background: #BA7517; }
+.color-dot-green { background: #639922; }
+.color-dot-pink { background: #D4537E; }
+.date-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.date-nav button { background: none; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 4px 10px; cursor: pointer; color: var(--color-text-secondary); font-size: 14px; }
+.date-nav button:hover { background: var(--color-background-secondary); }
+.date-nav .date-label { font-size: 14px; font-weight: 500; color: var(--color-text-primary); }
+.stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat-card { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 12px; }
+.stat-card .s-label { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 4px; }
+.stat-card .s-val { font-size: 20px; font-weight: 500; color: var(--color-text-primary); }
+.reminder-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 2px 7px; border-radius: 20px; background: #FAEEDA; color: #633806; margin-left: 4px; }
+.drop-hint { font-size: 11px; color: var(--color-text-tertiary); text-align: center; padding: 8px 0 4px; }
+.hour-cell.drag-over { background: #E6F1FB !important; }
+.current-time-line { position: absolute; left: 0; right: 0; height: 2px; background: #D85A30; z-index: 10; pointer-events: none; }
+.current-time-line::before { content: ''; position: absolute; left: -4px; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: #D85A30; }
+</style>
+
+<div class="planner">
+  <div>
+    <div class="date-nav">
+      <button id="prev-day" aria-label="Previous day">&#8592;</button>
+      <span class="date-label" id="date-label"></span>
+      <button id="next-day" aria-label="Next day">&#8594;</button>
+    </div>
+    <div class="time-col" id="time-grid"></div>
+  </div>
+
+  <div class="right-panel">
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="s-label">Scheduled</div>
+        <div class="s-val" id="stat-scheduled">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="s-label">Remaining</div>
+        <div class="s-val" id="stat-remaining">0</div>
+      </div>
+    </div>
+
+    <div class="task-list-panel">
+      <div class="panel-title"><i class="ti ti-list-check" aria-hidden="true"></i> Task list</div>
+      <div class="task-input-row">
+        <input type="text" id="new-task-input" placeholder="Add a task…" maxlength="60" />
+        <button id="add-task-btn" aria-label="Add task">+</button>
+      </div>
+      <div class="task-items" id="task-list"></div>
+      <div class="drop-hint">Drag tasks onto the calendar to schedule them</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const COLORS = ['purple','teal','coral','blue','amber','green','pink'];
+const HOURS = Array.from({length: 15}, (_,i) => i + 7);
+const colorIndex = {};
+
+let currentDate = new Date();
+currentDate.setHours(0,0,0,0);
+let tasks = [
+  {id:1, name:'Review emails', color:'blue', scheduled:false},
+  {id:2, name:'Team standup', color:'teal', scheduled:false},
+  {id:3, name:'Deep work block', color:'purple', scheduled:false},
+  {id:4, name:'Client call prep', color:'coral', scheduled:false},
+  {id:5, name:'Lunch break', color:'amber', scheduled:false},
+];
+let schedule = {};
+let nextId = 6;
+let nextColorIdx = 0;
+let draggingTask = null;
+let reminders = {};
+
+function fmt(d) {
+  return d.toLocaleDateString('en-CA', {weekday:'short', month:'short', day:'numeric'});
+}
+function isToday(d) {
+  const t = new Date(); t.setHours(0,0,0,0);
+  return d.getTime() === t.getTime();
+}
+function dateKey(d) { return d.toISOString().split('T')[0]; }
+
+function renderDateLabel() {
+  const lbl = document.getElementById('date-label');
+  lbl.textContent = isToday(currentDate) ? 'Today — ' + fmt(currentDate) : fmt(currentDate);
+}
+
+function renderStats() {
+  const key = dateKey(currentDate);
+  const daySchedule = schedule[key] || {};
+  const scheduled = Object.values(daySchedule).flat().length;
+  document.getElementById('stat-scheduled').textContent = scheduled;
+  document.getElementById('stat-remaining').textContent = tasks.filter(t => !t.scheduled).length;
+}
+
+function getBlocksForHour(key, hour) {
+  return (schedule[key] && schedule[key][hour]) ? schedule[key][hour] : [];
+}
+
+function renderGrid() {
+  const grid = document.getElementById('time-grid');
+  grid.innerHTML = '';
+  const key = dateKey(currentDate);
+  const now = new Date();
+  const nowHour = now.getHours();
+  const nowMin = now.getMinutes();
+
+  HOURS.forEach(hour => {
+    const row = document.createElement('div');
+    row.className = 'hour-row';
+
+    const label = document.createElement('div');
+    label.className = 'hour-label';
+    const h = hour % 12 || 12;
+    const ampm = hour < 12 ? 'am' : 'pm';
+    label.textContent = h + ampm;
+
+    const cell = document.createElement('div');
+    cell.className = 'hour-cell';
+    cell.dataset.hour = hour;
+
+    if (isToday(currentDate) && nowHour === hour) {
+      const line = document.createElement('div');
+      line.className = 'current-time-line';
+      line.style.top = Math.round((nowMin / 60) * 56) + 'px';
+      cell.appendChild(line);
+    }
+
+    const blocks = getBlocksForHour(key, hour);
+    blocks.forEach((taskId, idx) => {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+      const block = document.createElement('div');
+      block.className = `task-block color-${task.color}`;
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = task.name;
+      const reminderKey = key + '_' + hour + '_' + taskId;
+      if (reminders[reminderKey]) {
+        const badge = document.createElement('span');
+        badge.className = 'reminder-badge';
+        badge.innerHTML = '<i class="ti ti-bell" aria-hidden="true" style="font-size:10px"></i>';
+        nameSpan.appendChild(badge);
+      }
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'remove-block';
+      removeBtn.textContent = '×';
+      removeBtn.title = 'Remove from schedule';
+      removeBtn.addEventListener('click', () => {
+        schedule[key][hour] = schedule[key][hour].filter(id => id !== taskId);
+        const t = tasks.find(t => t.id === taskId);
+        if (t) t.scheduled = false;
+        renderGrid();
+        renderTaskList();
+        renderStats();
+      });
+      block.appendChild(nameSpan);
+      block.appendChild(removeBtn);
+      block.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        const rKey = key + '_' + hour + '_' + taskId;
+        reminders[rKey] = !reminders[rKey];
+        renderGrid();
+      });
+      cell.appendChild(block);
+    });
+
+    cell.addEventListener('dragover', e => { e.preventDefault(); cell.classList.add('drag-over'); });
+    cell.addEventListener('dragleave', () => cell.classList.remove('drag-over'));
+    cell.addEventListener('drop', e => {
+      e.preventDefault();
+      cell.classList.remove('drag-over');
+      if (!draggingTask) return;
+      const key2 = dateKey(currentDate);
+      if (!schedule[key2]) schedule[key2] = {};
+      if (!schedule[key2][hour]) schedule[key2][hour] = [];
+      if (!schedule[key2][hour].includes(draggingTask.id)) {
+        schedule[key2][hour].push(draggingTask.id);
+        draggingTask.scheduled = true;
+      }
+      draggingTask = null;
+      renderGrid();
+      renderTaskList();
+      renderStats();
+    });
+
+    row.appendChild(label);
+    row.appendChild(cell);
+    grid.appendChild(row);
+  });
+}
+
+function renderTaskList() {
+  const list = document.getElementById('task-list');
+  list.innerHTML = '';
+  if (tasks.length === 0) {
+    list.innerHTML = '<div style="font-size:13px;color:var(--color-text-tertiary);text-align:center;padding:16px 0;">No tasks yet. Add one above!</div>';
+    return;
+  }
+  tasks.forEach(task => {
+    const item = document.createElement('div');
+    item.className = 'task-item' + (task.scheduled ? ' scheduled' : '');
+    item.draggable = !task.scheduled;
+    item.innerHTML = `<div class="dot color-dot-${task.color}"></div><span class="task-name">${task.name}</span>${!task.scheduled ? '<span class="drag-hint"><i class="ti ti-grip-vertical" aria-hidden="true"></i></span>' : '<span class="drag-hint" style="font-size:11px;color:var(--color-text-tertiary)">✓</span>'}`;
+    item.addEventListener('dragstart', () => { draggingTask = task; });
+    item.addEventListener('dragend', () => { if (draggingTask) draggingTask = null; });
+    list.appendChild(item);
+  });
+}
+
+document.getElementById('add-task-btn').addEventListener('click', addTask);
+document.getElementById('new-task-input').addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
+
+function addTask() {
+  const input = document.getElementById('new-task-input');
+  const name = input.value.trim();
+  if (!name) return;
+  const color = COLORS[nextColorIdx % COLORS.length];
+  nextColorIdx++;
+  tasks.push({id: nextId++, name, color, scheduled: false});
+  input.value = '';
+  renderTaskList();
+  renderStats();
+}
+
+document.getElementById('prev-day').addEventListener('click', () => {
+  currentDate = new Date(currentDate); currentDate.setDate(currentDate.getDate() - 1);
+  renderDateLabel(); renderGrid(); renderStats();
+});
+document.getElementById('next-day').addEventListener('click', () => {
+  currentDate = new Date(currentDate); currentDate.setDate(currentDate.getDate() + 1);
+  renderDateLabel(); renderGrid(); renderStats();
+});
+
+renderDateLabel();
+renderGrid();
+renderTaskList();
+renderStats();
+
+setInterval(() => { if (isToday(currentDate)) renderGrid(); }, 60000);
+</script>
