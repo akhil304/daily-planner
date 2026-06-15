@@ -85,15 +85,25 @@ header h1{font-size:16px;font-weight:700;color:#1a1a2e}
 </div>
 <div id="toast"><div id="toast-title"></div><div id="toast-body"></div></div>
 <script>
+const STORE_KEY='dp_v1';
 const COLORS=['#5c6bc0','#43a047','#e53935','#fb8c00','#00acc1','#8e24aa','#f4511e','#00897b','#d81b60','#546e7a'];
 const MAX_PER_SLOT=10;
 const REMINDER_TASKS=[{id:'r1',name:'Morning standup'},{id:'r2',name:'Lunch break'},{id:'r3',name:'Team sync'},{id:'r4',name:'End of day review'}];
 let ci=0;
 let cur=new Date();cur.setHours(0,0,0,0);
-function loadS(){try{return JSON.parse(localStorage.getItem('dpState2')||'null')||{tasks:[],slots:{},reminders:{},nextId:1}}catch{return{tasks:[],slots:{},reminders:{},nextId:1}}}
+function loadS(){
+  const empty={tasks:[],slots:{},reminders:{},nextId:1};
+  try{
+    const v1=localStorage.getItem('dp_v1');
+    if(v1)return JSON.parse(v1);
+    const leg=localStorage.getItem('dpState2')||localStorage.getItem('dpState');
+    if(leg){const d=JSON.parse(leg);if(!d.reminders)d.reminders={};localStorage.setItem('dp_v1',JSON.stringify(d));return d;}
+  }catch(e){}
+  return empty;
+}
 let S=loadS();
 if(!S.reminders)S.reminders={};
-function save(){localStorage.setItem('dpState2',JSON.stringify(S))}
+function save(){localStorage.setItem('dp_v1',JSON.stringify(S))}
 function fmtH(h){return h.toString().padStart(2,'0')+':00'}
 function isToday(d){const t=new Date();return d.getFullYear()===t.getFullYear()&&d.getMonth()===t.getMonth()&&d.getDate()===t.getDate()}
 function dateKey(d){return d.toISOString().slice(0,10)}
