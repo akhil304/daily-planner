@@ -11,10 +11,10 @@ body{font-family:'Segoe UI',sans-serif;background:#f0f2f5;display:flex;flex-dire
 /* HEADER */
 header{background:#fff;padding:6px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e0e0e0;flex-shrink:0}
 header h1{font-size:15px;font-weight:700;color:#1a1a2e;white-space:nowrap;flex-shrink:0}
-.clocks-row{display:flex;gap:6px;flex:1;align-items:center;min-width:0}
-.clock-box{background:#f4f6fb;border:1px solid #e0e6f0;border-radius:10px;padding:4px 10px;display:flex;flex-direction:column;align-items:center;min-width:88px;cursor:pointer;transition:background .15s;flex-shrink:0}
+.clocks-row{display:flex;gap:16px;flex:1;align-items:center;min-width:0;padding:0 20px}
+.clock-box{background:#f4f6fb;border:1px solid #e0e6f0;border-radius:12px;padding:8px 20px;display:flex;flex-direction:column;align-items:center;min-width:104px;cursor:pointer;transition:background .15s;flex-shrink:0;box-shadow:0 1px 5px rgba(0,0,0,.07)}
 .clock-box:hover{background:#e8eaf6;border-color:#9fa8da}
-.clock-box.local{background:#eef2ff;border-color:#9fa8da;cursor:default}
+.clock-box.local{background:#eef2ff;border-color:#9fa8da;cursor:default;box-shadow:0 1px 5px rgba(92,107,192,.13)}
 .clock-label{font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
 .clock-time{font-size:15px;font-weight:700;color:#1a1a2e;letter-spacing:.5px;font-variant-numeric:tabular-nums}
 .clock-sub{font-size:9px;color:#aaa;margin-top:1px;white-space:nowrap}
