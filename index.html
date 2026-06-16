@@ -3,29 +3,37 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Daily Planner</title><!-- v6 -->
+<title>Daily Planner</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',sans-serif;background:#f0f2f5;display:flex;flex-direction:column;height:100vh;overflow:hidden}
-
-/* HEADER */
-header{background:#fff;padding:6px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e0e0e0;flex-shrink:0}
+header{background:#fff;padding:0;border-bottom:1px solid #e0e0e0;flex-shrink:0;display:flex;flex-direction:column}
+.header-top{padding:7px 14px;display:flex;align-items:center;gap:8px}
 header h1{font-size:15px;font-weight:700;color:#1a1a2e;white-space:nowrap;flex-shrink:0}
-.clocks-row{display:flex;gap:16px;flex:1;align-items:center;min-width:0;padding:0 20px}
-.clock-box{background:#f4f6fb;border:1px solid #e0e6f0;border-radius:12px;padding:8px 20px;display:flex;flex-direction:column;align-items:center;min-width:104px;cursor:pointer;transition:background .15s;flex-shrink:0;box-shadow:0 1px 5px rgba(0,0,0,.07)}
+.clocks-row{display:flex;gap:10px;padding:5px 14px 7px;overflow-x:auto;scrollbar-width:none}
+.clocks-row::-webkit-scrollbar{display:none}
+.clock-box{background:#f4f6fb;border:1px solid #e0e6f0;border-radius:11px;padding:6px 16px;display:flex;flex-direction:column;align-items:center;min-width:92px;flex-shrink:0;cursor:pointer;transition:background .15s;box-shadow:0 1px 4px rgba(0,0,0,.06)}
 .clock-box:hover{background:#e8eaf6;border-color:#9fa8da}
-.clock-box.local{background:#eef2ff;border-color:#9fa8da;cursor:default;box-shadow:0 1px 5px rgba(92,107,192,.13)}
+.clock-box.local{background:#eef2ff;border-color:#9fa8da;cursor:default}
 .clock-label{font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
-.clock-time{font-size:15px;font-weight:700;color:#1a1a2e;letter-spacing:.5px;font-variant-numeric:tabular-nums}
-.clock-sub{font-size:9px;color:#aaa;margin-top:1px;white-space:nowrap}
-.header-right{display:flex;align-items:center;gap:5px;flex-shrink:0;margin-left:auto}
-.nav-btn{background:none;border:1px solid #ddd;border-radius:6px;padding:3px 9px;cursor:pointer;font-size:13px;color:#555}
+.clock-time{font-size:14px;font-weight:700;color:#1a1a2e;letter-spacing:.4px;font-variant-numeric:tabular-nums}
+.clock-sub{font-size:9px;color:#aaa;white-space:nowrap}
+.header-right{display:flex;align-items:center;gap:5px;margin-left:auto;flex-shrink:0}
+.nav-btn{background:none;border:1px solid #ddd;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:13px;color:#555}
 .nav-btn:hover{background:#f5f5f5}
-.sync-btn{border:none;border-radius:6px;padding:3px 9px;cursor:pointer;font-size:11px;font-weight:600;color:#fff}
+.sync-btn{border:none;border-radius:6px;padding:4px 9px;cursor:pointer;font-size:11px;font-weight:600;color:#fff}
 #export-btn{background:#43a047}#import-btn{background:#5c6bc0}
+.cloud-btn{border:none;border-radius:6px;padding:4px 9px;cursor:pointer;font-size:11px;font-weight:600;color:#fff;background:#00897b}
+.cloud-btn.syncing{background:#ff8f00}
+.cloud-btn.error{background:#e53935}
 #date-label{font-size:13px;font-weight:600;color:#333;min-width:120px;text-align:center}
+/* sync status pill */
+.sync-status{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;margin-left:4px}
+.sync-status.ok{background:#e8f5e9;color:#2e7d32}
+.sync-status.busy{background:#fff8e1;color:#f57f17}
+.sync-status.err{background:#ffebee;color:#c62828}
 
-/* TZ PICKER */
+/* TZ MODAL */
 #tz-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center}
 #tz-modal.open{display:flex}
 .tz-box{background:#fff;border-radius:14px;padding:18px;width:320px;max-height:75vh;display:flex;flex-direction:column;gap:8px;box-shadow:0 8px 32px rgba(0,0,0,.2)}
@@ -33,79 +41,98 @@ header h1{font-size:15px;font-weight:700;color:#1a1a2e;white-space:nowrap;flex-s
 #tz-search{padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;width:100%}
 #tz-search:focus{border-color:#5c6bc0}
 #tz-list{overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:1px}
-.tz-item{padding:8px 10px;border-radius:8px;cursor:pointer;font-size:13px;color:#333;display:flex;justify-content:space-between}
+.tz-item{padding:9px 10px;border-radius:8px;cursor:pointer;font-size:13px;color:#333;display:flex;justify-content:space-between;align-items:center}
 .tz-item:hover{background:#f0f4ff}
 .tz-off{font-size:11px;color:#999;font-weight:600}
-#tz-cancel{padding:7px;background:#f5f5f5;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:#555}
+#tz-cancel{padding:8px;background:#f5f5f5;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:#555}
+
+/* SETUP MODAL */
+#setup-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;align-items:center;justify-content:center}
+#setup-modal.open{display:flex}
+.setup-box{background:#fff;border-radius:16px;padding:28px;width:380px;display:flex;flex-direction:column;gap:16px;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+.setup-box h2{font-size:18px;font-weight:700;color:#1a1a2e}
+.setup-box p{font-size:13px;color:#666;line-height:1.5}
+.setup-steps{display:flex;flex-direction:column;gap:10px}
+.setup-step{background:#f8f9ff;border:1px solid #e0e6ff;border-radius:10px;padding:12px 14px}
+.setup-step strong{display:block;font-size:12px;font-weight:700;color:#5c6bc0;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
+.setup-step p{font-size:12px;color:#555;margin:0}
+.setup-step a{color:#5c6bc0;font-weight:600}
+.setup-input-row{display:flex;flex-direction:column;gap:6px}
+.setup-input-row label{font-size:12px;font-weight:600;color:#555}
+.setup-input-row input{padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none;font-family:inherit}
+.setup-input-row input:focus{border-color:#5c6bc0}
+.setup-actions{display:flex;gap:8px}
+.btn-primary{flex:1;padding:10px;background:#5c6bc0;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600}
+.btn-primary:hover{background:#4a5ab0}
+.btn-secondary{padding:10px 16px;background:#f5f5f5;color:#555;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600}
+.setup-note{font-size:11px;color:#aaa;text-align:center}
 
 /* MAIN */
 .main{display:flex;flex:1;overflow:hidden}
-.cal-panel{flex:1;overflow-y:auto;border-right:1px solid #e0e0e0;background:#fff}
-.hour-row{display:flex;align-items:stretch;border-bottom:1px solid #f0f0f0;min-height:52px}
-.hour-label{width:52px;flex-shrink:0;font-size:13px;font-weight:600;color:#888;padding:6px 6px 0;text-align:right;user-select:none}
-.hour-cell{flex:1;display:flex;flex-direction:row;align-items:stretch;padding:4px;gap:3px;position:relative;overflow:hidden;min-height:44px;transition:background .1s}
-.hour-cell.drag-over{background:#e8eaf6;outline:2px dashed #5c6bc0}
+.cal-panel{flex:1;overflow-y:auto;border-right:1px solid #e0e0e0;background:#fff;position:relative}
+.cal-grid{position:relative}
+.hour-row{display:flex;border-bottom:1px solid #f0f0f0;height:60px;position:relative}
+.hour-label{width:52px;flex-shrink:0;font-size:12px;font-weight:600;color:#aaa;padding:6px 8px 0;text-align:right;user-select:none}
+.hour-cell{flex:1;position:relative}
+.hour-cell.drag-over{background:#e8eaf6 !important}
 .hour-cell:hover{background:#f8f9ff}
-
-/* CAL CHIPS */
-.cal-chip{flex:1;min-width:0;border-radius:6px;display:flex;align-items:center;position:relative;overflow:hidden}
-.chip-text{font-size:11px;font-weight:700;color:#fff;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;outline:none;background:none;border:none;cursor:text;padding:4px 24px 4px 8px;font-family:inherit;width:100%}
-.chip-text:focus{background:rgba(255,255,255,.2)}
-.chip-rm{position:absolute;right:4px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.3);border:none;color:#fff;border-radius:50%;width:16px;height:16px;font-size:11px;line-height:16px;text-align:center;cursor:pointer;padding:0;opacity:0;transition:opacity .15s}
-.cal-chip:hover .chip-rm{opacity:1}
-
-.now-line{position:absolute;left:0;right:0;height:2px;background:#e53935;z-index:5;pointer-events:none}
-.now-line::before{content:'';position:absolute;left:-4px;top:-4px;width:10px;height:10px;border-radius:50%;background:#e53935}
+.cal-entries{position:absolute;top:0;left:52px;right:0;pointer-events:none}
+.cal-entry{position:absolute;border-radius:7px;pointer-events:all;display:flex;flex-direction:column;overflow:hidden;transition:box-shadow .12s;cursor:default}
+.cal-entry:hover{box-shadow:0 3px 14px rgba(0,0,0,.22);z-index:20}
+.cal-entry.task-entry{border:none}
+.cal-entry.rem-entry{background:#fff;border-left:4px solid;box-shadow:0 1px 5px rgba(0,0,0,.1)}
+.entry-body{flex:1;padding:4px 20px 4px 8px;display:flex;flex-direction:column;justify-content:center;overflow:hidden;min-height:0}
+.entry-name{font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:none;border:none;outline:none;width:100%;padding:0;font-family:inherit;cursor:text}
+.task-entry .entry-name{color:#fff}
+.task-entry .entry-name:focus{background:rgba(255,255,255,.2);border-radius:3px}
+.rem-entry .entry-name{color:#333}
+.rem-entry .entry-name:focus{background:#f0f4ff;border-radius:3px}
+.entry-sub{font-size:9px;margin-top:2px}
+.task-entry .entry-sub{color:rgba(255,255,255,.65)}
+.rem-entry .entry-sub{color:#888}
+.entry-rm{position:absolute;top:3px;right:3px;width:15px;height:15px;border-radius:50%;border:none;font-size:9px;line-height:15px;text-align:center;cursor:pointer;padding:0;opacity:0;transition:opacity .12s}
+.task-entry .entry-rm{background:rgba(0,0,0,.3);color:#fff}
+.rem-entry .entry-rm{background:rgba(0,0,0,.1);color:#555}
+.cal-entry:hover .entry-rm{opacity:1}
+.resize-handle{position:absolute;bottom:0;left:0;right:0;height:8px;cursor:ns-resize;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .12s}
+.resize-handle::after{content:'';width:20px;height:3px;border-radius:2px;background:rgba(255,255,255,.6)}
+.rem-entry .resize-handle::after{background:rgba(0,0,0,.2)}
+.cal-entry:hover .resize-handle{opacity:1}
+.now-line{position:absolute;left:0;right:0;height:2px;background:#e53935;z-index:10;pointer-events:none}
+.now-line::before{content:'';position:absolute;left:-5px;top:-4px;width:10px;height:10px;border-radius:50%;background:#e53935}
 
 /* RIGHT PANEL */
 .right-panel{width:280px;flex-shrink:0;display:flex;flex-direction:column;background:#fafbfc;overflow:hidden}
-.panel-section{flex:1;overflow-y:auto;padding:12px;min-height:0}
+.panel-section{flex:1;overflow-y:auto;padding:12px;min-height:0;display:flex;flex-direction:column}
 .panel-section+.panel-section{border-top:1px solid #e8e8e8}
 .panel-title{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
 .add-row{display:flex;gap:6px;margin-bottom:6px}
-.add-row input{flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none}
+.add-row input{flex:1;padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;outline:none}
 .add-row input:focus{border-color:#5c6bc0}
-.add-row button{padding:6px 12px;background:#5c6bc0;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600}
+.add-row button{padding:7px 12px;background:#5c6bc0;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600}
 .drag-hint{font-size:10px;color:#bbb;text-align:center;padding:0 0 8px}
-
-/* CARDS */
-.item-card{display:flex;align-items:center;gap:7px;padding:7px 9px;border-radius:10px;margin-bottom:5px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.08);cursor:grab;user-select:none}
-.item-card.dragging{opacity:.4}
+.item-card{display:flex;align-items:center;gap:7px;padding:8px 10px;border-radius:10px;margin-bottom:5px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.08);cursor:grab;user-select:none}
+.item-card.dragging{opacity:.35;transform:scale(.97)}
 .item-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.item-dot.sq{border-radius:2px}
 .item-name{font-size:13px;color:#333;flex:1;min-width:0;outline:none;background:none;border:none;cursor:text;padding:0;font-family:inherit}
 .item-name:focus{background:#f0f4ff;border-radius:3px;padding:1px 4px}
-.item-time{width:48px;font-size:12px;font-weight:600;color:#5c6bc0;border:none;background:none;outline:none;text-align:right;cursor:pointer;padding:0;font-family:inherit}
+.item-time{width:50px;font-size:12px;font-weight:600;color:#5c6bc0;border:none;background:none;outline:none;text-align:right;padding:0;font-family:inherit;cursor:pointer}
 .item-time:focus{background:#eef2ff;border-radius:3px;padding:1px 3px}
-.item-del{background:none;border:none;cursor:pointer;color:#ccc;font-size:14px;padding:0 1px;line-height:1;flex-shrink:0}
+.item-del{background:none;border:none;cursor:pointer;color:#ccc;font-size:15px;padding:0 2px;line-height:1;flex-shrink:0}
 .item-del:hover{color:#e53935}
+.rem-wrap{border-left:3px solid #455a64;border-radius:0 10px 10px 0;margin-bottom:5px}
+.rem-wrap .item-card{margin-bottom:0;border-radius:0 10px 10px 0}
 
-#toast{display:none;position:fixed;bottom:20px;right:20px;background:#323232;color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;z-index:9999;max-width:300px}
+#toast{display:none;position:fixed;bottom:20px;right:20px;background:#323232;color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;z-index:9999;max-width:300px;box-shadow:0 4px 16px rgba(0,0,0,.3)}
 #toast-title{font-weight:700;margin-bottom:2px}
 #toast-body{font-size:12px;opacity:.85}
 
-/* ===== MOBILE RESPONSIVE ===== */
 @media(max-width:640px){
-  header{flex-direction:column;padding:0}
-  .header-top{padding:6px 10px;width:100%}
-  header h1{font-size:13px}
-  .nav-btn{padding:3px 7px;font-size:11px;min-height:30px}
-  .sync-btn{padding:3px 6px;font-size:10px;min-height:30px}
-  #date-label{font-size:12px;min-width:80px}
-  .clocks-row{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:4px 10px 6px;flex-wrap:nowrap}
-  .clocks-row::-webkit-scrollbar{display:none}
-  .clock-box{min-width:80px;padding:5px 12px;flex-shrink:0}
-  .clock-time{font-size:13px}
-  .clock-label{font-size:8px}
   .main{flex-direction:column}
   .cal-panel{border-right:none;flex:1;min-height:0}
-  .right-panel{width:100%;border-left:none;border-top:1px solid #e8e8e8;height:46dvh;flex-shrink:0;overflow-y:auto}
+  .right-panel{width:100%;border-top:1px solid #e0e0e0;height:44vh;flex-shrink:0}
   .panel-section+.panel-section{display:none}
-  .panel-section{padding:8px 10px}
-  .item-card{padding:8px 9px;min-height:42px}
-  .item-name{font-size:13px}
-  .add-row input{font-size:13px;padding:7px 9px}
-  .panel-title{margin-bottom:6px}
-  #toast{bottom:8px;border-radius:12px}
   .drag-hint{display:none}
 }
 </style>
@@ -115,27 +142,72 @@ header h1{font-size:15px;font-weight:700;color:#1a1a2e;white-space:nowrap;flex-s
 <div id="tz-modal">
   <div class="tz-box">
     <h3>Pick a timezone</h3>
-    <input id="tz-search" type="text" placeholder="Search city or country...">
+    <input id="tz-search" placeholder="Search city or country...">
     <div id="tz-list"></div>
     <button id="tz-cancel">Cancel</button>
   </div>
 </div>
 
+<div id="setup-modal">
+  <div class="setup-box">
+    <h2>Connect Cloud Sync</h2>
+    <p>Set up a free Supabase database so your tasks and reminders sync across all your devices in real time.</p>
+    <div class="setup-steps">
+      <div class="setup-step">
+        <strong>Step 1 &mdash; Create free Supabase project</strong>
+        <p>Go to <a href="https://supabase.com" target="_blank">supabase.com</a>, sign up free, create a new project.</p>
+      </div>
+      <div class="setup-step">
+        <strong>Step 2 &mdash; Run this SQL once</strong>
+        <p>In Supabase &rarr; SQL Editor, paste and run:<br>
+        <code style="font-size:11px;background:#f0f0f0;padding:4px 6px;border-radius:4px;display:block;margin-top:6px;word-break:break-all">
+create table if not exists planner(key text primary key, value text, updated_at timestamptz default now());
+alter table planner enable row level security;
+create policy "public rw" on planner for all using (true) with check (true);
+        </code></p>
+      </div>
+      <div class="setup-step">
+        <strong>Step 3 &mdash; Paste your credentials</strong>
+        <p>Project Settings &rarr; API &rarr; copy Project URL and anon/public key.</p>
+      </div>
+    </div>
+    <div class="setup-input-row">
+      <label>Supabase Project URL</label>
+      <input id="sb-url" placeholder="https://xxxx.supabase.co" type="url">
+    </div>
+    <div class="setup-input-row">
+      <label>Supabase Anon Key</label>
+      <input id="sb-key" placeholder="eyJ..." type="password">
+    </div>
+    <div class="setup-actions">
+      <button class="btn-secondary" id="setup-skip">Use local only</button>
+      <button class="btn-primary" id="setup-save">Connect &amp; Sync</button>
+    </div>
+    <p class="setup-note">Your data is stored only in your own Supabase project. Anthropic has no access.</p>
+  </div>
+</div>
+
 <header>
-  <h1>Daily Planner</h1>
-  <div class="clocks-row" id="clocks-row"></div>
-  <div class="header-right">
-    <button class="nav-btn" id="prev">&#8249;</button>
-    <span id="date-label"></span>
-    <button class="nav-btn" id="next">&#8250;</button>
-    <button class="nav-btn" id="today-btn">Today</button>
-    <button class="sync-btn" id="export-btn">Copy Link</button>
-    <button class="sync-btn" id="import-btn">Import</button>
+  <div class="header-top">
+    <h1>Daily Planner</h1>
+    <div class="clocks-row" id="clocks-row"></div>
+    <div class="header-right">
+      <button class="nav-btn" id="prev">&#8249;</button>
+      <span id="date-label"></span>
+      <button class="nav-btn" id="next">&#8250;</button>
+      <button class="nav-btn" id="today-btn">Today</button>
+      <button class="cloud-btn" id="cloud-btn" title="Cloud sync settings">&#9729; Sync</button>
+      <span class="sync-status" id="sync-status"></span>
+    </div>
   </div>
 </header>
 
 <div class="main">
-  <div class="cal-panel" id="cal-panel"><div id="cal-grid"></div></div>
+  <div class="cal-panel" id="cal-panel">
+    <div class="cal-grid" id="cal-grid">
+      <div class="cal-entries" id="cal-entries"></div>
+    </div>
+  </div>
   <div class="right-panel">
     <div class="panel-section">
       <div class="panel-title">Tasks</div>
@@ -143,8 +215,8 @@ header h1{font-size:15px;font-weight:700;color:#1a1a2e;white-space:nowrap;flex-s
         <input id="task-input" placeholder="New task...">
         <button id="task-btn">+</button>
       </div>
-      <div class="drag-hint">Drag onto the calendar</div>
-      <div id="task-list"></div>
+      <div class="drag-hint">Drag to calendar &middot; drag bottom to extend</div>
+      <div id="task-list" style="overflow-y:auto;flex:1"></div>
     </div>
     <div class="panel-section">
       <div class="panel-title">Reminders</div>
@@ -152,92 +224,258 @@ header h1{font-size:15px;font-weight:700;color:#1a1a2e;white-space:nowrap;flex-s
         <input id="rem-input" placeholder="New reminder...">
         <button id="rem-btn">+</button>
       </div>
-      <div class="drag-hint">Drag onto the calendar</div>
-      <div id="rem-list"></div>
+      <div class="drag-hint">Set time to auto-place &middot; drag to extend</div>
+      <div id="rem-list" style="overflow-y:auto;flex:1"></div>
     </div>
   </div>
 </div>
 <div id="toast"><div id="toast-title"></div><div id="toast-body"></div></div>
 
 <script>
-/* ---- TIMEZONE DATA ---- */
-const TZ = [
-  {c:'US',n:'New York',z:'America/New_York'},{c:'US',n:'Los Angeles',z:'America/Los_Angeles'},{c:'US',n:'Chicago',z:'America/Chicago'},
-  {c:'CA',n:'Toronto',z:'America/Toronto'},{c:'CA',n:'Vancouver',z:'America/Vancouver'},{c:'BR',n:'Sao Paulo',z:'America/Sao_Paulo'},
-  {c:'MX',n:'Mexico City',z:'America/Mexico_City'},{c:'AR',n:'Buenos Aires',z:'America/Argentina/Buenos_Aires'},
-  {c:'GB',n:'London',z:'Europe/London'},{c:'FR',n:'Paris',z:'Europe/Paris'},{c:'DE',n:'Berlin',z:'Europe/Berlin'},
-  {c:'NL',n:'Amsterdam',z:'Europe/Amsterdam'},{c:'ES',n:'Madrid',z:'Europe/Madrid'},{c:'IT',n:'Rome',z:'Europe/Rome'},
-  {c:'CH',n:'Zurich',z:'Europe/Zurich'},{c:'SE',n:'Stockholm',z:'Europe/Stockholm'},{c:'PL',n:'Warsaw',z:'Europe/Warsaw'},
-  {c:'TR',n:'Istanbul',z:'Europe/Istanbul'},{c:'RU',n:'Moscow',z:'Europe/Moscow'},
-  {c:'AE',n:'Dubai',z:'Asia/Dubai'},{c:'SA',n:'Riyadh',z:'Asia/Riyadh'},{c:'PK',n:'Karachi',z:'Asia/Karachi'},
-  {c:'IN',n:'Mumbai',z:'Asia/Kolkata'},{c:'LK',n:'Colombo',z:'Asia/Colombo'},{c:'BD',n:'Dhaka',z:'Asia/Dhaka'},
-  {c:'TH',n:'Bangkok',z:'Asia/Bangkok'},{c:'SG',n:'Singapore',z:'Asia/Singapore'},{c:'MY',n:'Kuala Lumpur',z:'Asia/Kuala_Lumpur'},
-  {c:'PH',n:'Manila',z:'Asia/Manila'},{c:'HK',n:'Hong Kong',z:'Asia/Hong_Kong'},{c:'CN',n:'Shanghai',z:'Asia/Shanghai'},
-  {c:'KR',n:'Seoul',z:'Asia/Seoul'},{c:'JP',n:'Tokyo',z:'Asia/Tokyo'},
-  {c:'AU',n:'Sydney',z:'Australia/Sydney'},{c:'AU',n:'Melbourne',z:'Australia/Melbourne'},
-  {c:'NZ',n:'Auckland',z:'Pacific/Auckland'},
+/* ============================================================
+   TIMEZONE DATA
+============================================================ */
+const TZ=[
+  {c:'US',n:'New York',z:'America/New_York'},{c:'US',n:'Los Angeles',z:'America/Los_Angeles'},
+  {c:'US',n:'Chicago',z:'America/Chicago'},{c:'CA',n:'Toronto',z:'America/Toronto'},
+  {c:'BR',n:'Sao Paulo',z:'America/Sao_Paulo'},{c:'MX',n:'Mexico City',z:'America/Mexico_City'},
+  {c:'AR',n:'Buenos Aires',z:'America/Argentina/Buenos_Aires'},
+  {c:'GB',n:'London',z:'Europe/London'},{c:'FR',n:'Paris',z:'Europe/Paris'},
+  {c:'DE',n:'Berlin',z:'Europe/Berlin'},{c:'NL',n:'Amsterdam',z:'Europe/Amsterdam'},
+  {c:'ES',n:'Madrid',z:'Europe/Madrid'},{c:'IT',n:'Rome',z:'Europe/Rome'},
+  {c:'CH',n:'Zurich',z:'Europe/Zurich'},{c:'SE',n:'Stockholm',z:'Europe/Stockholm'},
+  {c:'PL',n:'Warsaw',z:'Europe/Warsaw'},{c:'TR',n:'Istanbul',z:'Europe/Istanbul'},
+  {c:'RU',n:'Moscow',z:'Europe/Moscow'},{c:'AE',n:'Dubai',z:'Asia/Dubai'},
+  {c:'SA',n:'Riyadh',z:'Asia/Riyadh'},{c:'PK',n:'Karachi',z:'Asia/Karachi'},
+  {c:'IN',n:'Mumbai',z:'Asia/Kolkata'},{c:'LK',n:'Colombo',z:'Asia/Colombo'},
+  {c:'BD',n:'Dhaka',z:'Asia/Dhaka'},{c:'TH',n:'Bangkok',z:'Asia/Bangkok'},
+  {c:'SG',n:'Singapore',z:'Asia/Singapore'},{c:'MY',n:'Kuala Lumpur',z:'Asia/Kuala_Lumpur'},
+  {c:'PH',n:'Manila',z:'Asia/Manila'},{c:'HK',n:'Hong Kong',z:'Asia/Hong_Kong'},
+  {c:'CN',n:'Shanghai',z:'Asia/Shanghai'},{c:'KR',n:'Seoul',z:'Asia/Seoul'},
+  {c:'JP',n:'Tokyo',z:'Asia/Tokyo'},{c:'AU',n:'Sydney',z:'Australia/Sydney'},
+  {c:'AU',n:'Melbourne',z:'Australia/Melbourne'},{c:'NZ',n:'Auckland',z:'Pacific/Auckland'},
   {c:'ZA',n:'Johannesburg',z:'Africa/Johannesburg'},{c:'EG',n:'Cairo',z:'Africa/Cairo'},
   {c:'NG',n:'Lagos',z:'Africa/Lagos'},{c:'KE',n:'Nairobi',z:'Africa/Nairobi'}
 ];
 function flag(c){return c.split('').map(x=>String.fromCodePoint(127397+x.charCodeAt(0))).join('')}
-function tzTime(z){return new Date().toLocaleTimeString('en-GB',{timeZone:z,hour:'2-digit',minute:'2-digit',second:'2-digit'})}
+function tzTime(z){
+  const o={hour:'2-digit',minute:'2-digit',second:'2-digit'};
+  if(z)o.timeZone=z;
+  return new Date().toLocaleTimeString('en-GB',o);
+}
 function tzOff(z){try{const s=new Date().toLocaleString('en',{timeZone:z,timeZoneName:'shortOffset'});const m=s.match(/GMT[+-]?[\d:]*/);return m?m[0]:'GMT'}catch(e){return ''}}
 
-/* ---- STORE ---- */
-const KEY='dp_v5';
+/* ============================================================
+   CONSTANTS & STATE
+============================================================ */
+const ROW_H=60;
+const LOCAL_KEY='dp_v6';
 const COLORS=['#5c6bc0','#43a047','#e53935','#fb8c00','#00acc1','#8e24aa','#f4511e','#00897b','#d81b60','#546e7a'];
-const REM_COL='#455a64';
-let ci=0, cur=new Date(), dragItem=null;
+const RCOLS=['#455a64','#37474f','#6d4c41','#4a148c','#004d40','#bf360c'];
+let ci=0,ri=0,cur=new Date(),dragItem=null;
 cur.setHours(0,0,0,0);
 
-function blank(){return{tasks:[],reminders:[],slots:{},nextId:1,clocks:['America/New_York','Europe/London','Asia/Tokyo']}}
-function load(){
+/* ============================================================
+   SUPABASE CLOUD SYNC
+   All data stored in one row: key='planner_data', value=JSON
+============================================================ */
+let SB_URL='', SB_KEY='';
+let cloudEnabled=false;
+let syncTimer=null;
+let lastCloudHash='';
+
+function loadCloudCreds(){
+  SB_URL=localStorage.getItem('sb_url')||'';
+  SB_KEY=localStorage.getItem('sb_key')||'';
+  cloudEnabled=!!(SB_URL&&SB_KEY);
+}
+function saveCloudCreds(url,key){
+  SB_URL=url;SB_KEY=key;
+  localStorage.setItem('sb_url',url);
+  localStorage.setItem('sb_key',key);
+  cloudEnabled=!!(url&&key);
+}
+
+function sbHeaders(){
+  return {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'};
+}
+
+async function cloudFetch(S){
+  if(!cloudEnabled)return null;
+  setSyncStatus('busy','Syncing...');
+  try{
+    const r=await fetch(SB_URL+'/rest/v1/planner?key=eq.planner_data&select=value',{headers:sbHeaders()});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const rows=await r.json();
+    if(!rows||!rows.length){setSyncStatus('ok','Synced');return null;}
+    const remote=JSON.parse(rows[0].value);
+    setSyncStatus('ok','Synced');
+    lastCloudHash=rows[0].value;
+    return remote;
+  }catch(e){
+    setSyncStatus('err','Sync failed');
+    console.error('Cloud fetch error',e);
+    return null;
+  }
+}
+
+async function cloudPush(S){
+  if(!cloudEnabled)return;
+  const val=JSON.stringify(S);
+  if(val===lastCloudHash)return; // no change
+  setSyncStatus('busy','Saving...');
+  try{
+    const body=JSON.stringify({key:'planner_data',value:val,updated_at:new Date().toISOString()});
+    const r=await fetch(SB_URL+'/rest/v1/planner',{
+      method:'POST',
+      headers:{...sbHeaders(),'Prefer':'resolution=merge-duplicates,return=minimal'},
+      body
+    });
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    lastCloudHash=val;
+    setSyncStatus('ok','Saved '+new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}));
+  }catch(e){
+    setSyncStatus('err','Save failed');
+    console.error('Cloud push error',e);
+  }
+}
+
+function setSyncStatus(state,msg){
+  const el=document.getElementById('sync-status');
+  if(!el)return;
+  el.textContent=msg;
+  el.className='sync-status '+(state==='ok'?'ok':state==='busy'?'busy':'err');
+  const cb=document.getElementById('cloud-btn');
+  if(cb)cb.className='cloud-btn'+(state==='err'?' error':state==='busy'?' syncing':'');
+}
+
+function schedulePush(){
+  clearTimeout(syncTimer);
+  syncTimer=setTimeout(()=>cloudPush(S),1500);
+}
+
+/* ============================================================
+   LOCAL STORAGE
+============================================================ */
+function blank(){return{tasks:[],reminders:[],entries:{},nextId:1,clocks:['America/New_York','Europe/London','Asia/Tokyo']}}
+
+function migrateOld(d){
+  if(!d)return blank();
+  if(d.slots&&!d.entries){
+    d.entries={};
+    Object.entries(d.slots).forEach(([k,tids])=>{
+      const pts=k.split('_');const h=parseInt(pts[pts.length-1]);const dk=pts.slice(0,-1).join('_');
+      if(!d.entries[dk])d.entries[dk]=[];
+      (tids||[]).forEach(tid=>{
+        const t=(d.tasks||[]).find(x=>x.id===tid);
+        if(t)d.entries[dk].push({id:d.nextId++,label:t.name,color:t.color,type:'task',startH:h,endH:h+1,srcId:tid});
+      });
+    });
+    delete d.slots;
+  }
+  if(!d.entries)d.entries={};
+  if(!Array.isArray(d.reminders))d.reminders=[];
+  if(!d.clocks)d.clocks=['America/New_York','Europe/London','Asia/Tokyo'];
+  if(!d.nextId)d.nextId=1;
+  return d;
+}
+
+function loadLocal(){
   try{
     const p=new URLSearchParams(location.search).get('d');
-    if(p){const d=JSON.parse(atob(p));history.replaceState(null,'',location.pathname);store(d);showToast('Synced!','Data loaded from link');return d;}
-    const v=localStorage.getItem(KEY);if(v)return JSON.parse(v);
+    if(p){const d=migrateOld(JSON.parse(atob(p)));history.replaceState(null,'',location.pathname);saveLocal(d);return d;}
+    for(const k of[LOCAL_KEY,'dp_v5','dp_v4','dp_v3','dp_v2','dp_v1','dpState2','dpState']){
+      const s=localStorage.getItem(k);if(s)return migrateOld(JSON.parse(s));
+    }
   }catch(e){}
   return blank();
 }
-let S=load();
-if(!S.clocks)S.clocks=['America/New_York','Europe/London','Asia/Tokyo'];
-if(!Array.isArray(S.reminders))S.reminders=[];
-function store(s){localStorage.setItem(KEY,JSON.stringify(s||S))}
-function save(){store(S)}
 
-/* ---- CLOCKS ---- */
+function saveLocal(s){localStorage.setItem(LOCAL_KEY,JSON.stringify(s||S))}
+function save(){saveLocal(S);schedulePush();}
+
+let S=loadLocal();
+loadCloudCreds();
+
+/* ============================================================
+   INITIAL CLOUD LOAD — merge remote into local on startup
+============================================================ */
+async function initCloudSync(){
+  if(!cloudEnabled){setSyncStatus('','');return;}
+  setSyncStatus('busy','Loading...');
+  const remote=await cloudFetch(S);
+  if(remote){
+    // merge: remote wins on tasks/reminders; entries merged by date key
+    S=migrateOld(remote);
+    saveLocal(S);
+    renderAll();
+    showToast('Cloud synced','Latest data loaded from cloud');
+  } else {
+    // push local up if cloud is empty
+    await cloudPush(S);
+  }
+  // Poll every 30s for changes from other devices
+  setInterval(async()=>{
+    const remote=await cloudFetch(S);
+    if(remote){
+      const remoteStr=JSON.stringify(remote);
+      if(remoteStr!==JSON.stringify(S)){
+        S=migrateOld(remote);
+        saveLocal(S);
+        renderAll();
+        showToast('Synced','Updated from another device');
+      }
+    }
+  },30000);
+}
+
+/* ============================================================
+   SETUP MODAL
+============================================================ */
+document.getElementById('cloud-btn').onclick=()=>{
+  document.getElementById('sb-url').value=SB_URL;
+  document.getElementById('sb-key').value=SB_KEY;
+  document.getElementById('setup-modal').classList.add('open');
+};
+document.getElementById('setup-skip').onclick=()=>{
+  document.getElementById('setup-modal').classList.remove('open');
+};
+document.getElementById('setup-save').onclick=async()=>{
+  const url=document.getElementById('sb-url').value.trim().replace(/\/$/,'');
+  const key=document.getElementById('sb-key').value.trim();
+  if(!url||!key){showToast('Missing info','Please fill both fields');return;}
+  saveCloudCreds(url,key);
+  document.getElementById('setup-modal').classList.remove('open');
+  showToast('Connecting...','Testing Supabase connection');
+  await initCloudSync();
+  showToast('Connected!','Cloud sync is now active');
+};
+document.getElementById('setup-modal').onclick=e=>{if(e.target===document.getElementById('setup-modal'))document.getElementById('setup-modal').classList.remove('open')};
+
+/* ============================================================
+   CLOCKS
+============================================================ */
 let tzSlot=0;
 function renderClocks(){
   const row=document.getElementById('clocks-row');row.innerHTML='';
-  // Local
   const loc=document.createElement('div');loc.className='clock-box local';
   loc.innerHTML='<div class="clock-label">Local</div><div class="clock-time" id="ck-loc">--:--:--</div><div class="clock-sub">Your time</div>';
   row.appendChild(loc);
-  // 3 custom
   S.clocks.forEach((z,i)=>{
     const e=TZ.find(x=>x.z===z)||{c:'  ',n:z,z};
     const b=document.createElement('div');b.className='clock-box';
     b.innerHTML='<div class="clock-label">'+flag(e.c)+' '+e.n+'</div><div class="clock-time" id="ck-'+i+'">--:--:--</div><div class="clock-sub">'+tzOff(z)+'</div>';
-    b.title='Click to change';
-    b.onclick=()=>{tzSlot=i;openPicker()};
+    b.title='Click to change';b.onclick=()=>{tzSlot=i;openPicker()};
     row.appendChild(b);
   });
   tickClocks();
 }
 function tickClocks(){
-  const l=document.getElementById('ck-loc');
-  if(l)l.textContent=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  S.clocks.forEach((z,i)=>{const el=document.getElementById('ck-'+i);if(el)el.textContent=tzTime(z)});
+  const l=document.getElementById('ck-loc');if(l)l.textContent=tzTime(null);
+  S.clocks.forEach((z,i)=>{const el=document.getElementById('ck-'+i);if(el)el.textContent=tzTime(z);});
 }
 setInterval(tickClocks,1000);
-
-/* ---- TZ PICKER ---- */
-function openPicker(){
-  document.getElementById('tz-search').value='';
-  fillList('');
-  document.getElementById('tz-modal').classList.add('open');
-  setTimeout(()=>document.getElementById('tz-search').focus(),60);
-}
+function openPicker(){document.getElementById('tz-search').value='';fillList('');document.getElementById('tz-modal').classList.add('open');setTimeout(()=>document.getElementById('tz-search').focus(),60);}
 function fillList(q){
   const ul=document.getElementById('tz-list');ul.innerHTML='';
   (q?TZ.filter(x=>x.n.toLowerCase().includes(q.toLowerCase())||x.c.toLowerCase().includes(q.toLowerCase())):TZ).forEach(e=>{
@@ -251,17 +489,29 @@ document.getElementById('tz-search').oninput=e=>fillList(e.target.value);
 document.getElementById('tz-cancel').onclick=()=>document.getElementById('tz-modal').classList.remove('open');
 document.getElementById('tz-modal').onclick=e=>{if(e.target===document.getElementById('tz-modal'))document.getElementById('tz-modal').classList.remove('open')};
 
-/* ---- CALENDAR ---- */
+/* ============================================================
+   UTILS
+============================================================ */
+function fmtH(h){return h.toString().padStart(2,'0')+':00'}
+function isToday(d){const t=new Date();return d.getFullYear()===t.getFullYear()&&d.getMonth()===t.getMonth()&&d.getDate()===t.getDate()}
+function dateKey(d){return d.toISOString().slice(0,10)}
+function showToast(t,b){const el=document.getElementById('toast');document.getElementById('toast-title').textContent=t;document.getElementById('toast-body').textContent=b;el.style.display='block';clearTimeout(showToast._t);showToast._t=setTimeout(()=>el.style.display='none',4000)}
+
+/* ============================================================
+   CALENDAR
+============================================================ */
 function renderCal(){
   const dk=dateKey(cur);
   const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   document.getElementById('date-label').textContent=days[cur.getDay()]+', '+months[cur.getMonth()]+' '+cur.getDate();
-  let grid=document.getElementById('cal-grid');if(!grid){grid=document.createElement('div');grid.id='cal-grid';grid.style.position='relative';document.getElementById('cal-panel').appendChild(grid);}grid.innerHTML='';grid.style.position='relative';
+  const grid=document.getElementById('cal-grid');
+  Array.from(grid.querySelectorAll('.hour-row')).forEach(r=>r.remove());
+  const entriesDiv=document.getElementById('cal-entries');
   const now=new Date();
-  for(let h=0;h<24;h++){
+  for(let h=23;h>=0;h--){
     const row=document.createElement('div');row.className='hour-row';
     const lbl=document.createElement('div');lbl.className='hour-label';lbl.textContent=fmtH(h);
-    const cell=document.createElement('div');cell.className='hour-cell';cell.dataset.h=h;
+    const cell=document.createElement('div');cell.className='hour-cell';
     cell.addEventListener('dragover',e=>{e.preventDefault();cell.classList.add('drag-over')});
     cell.addEventListener('dragleave',()=>cell.classList.remove('drag-over'));
     cell.addEventListener('drop',e=>{
@@ -269,25 +519,25 @@ function renderCal(){
       if(!dragItem)return;
       if(!S.entries[dk])S.entries[dk]=[];
       let label='',color='#5c6bc0',type=dragItem.type,srcId=dragItem.id;
-      if(type==='task'){const t=S.tasks.find(x=>x.id===srcId);label=t?t.name:'Task';color=t?t.color:'#5c6bc0';}
-      else{const r=S.reminders.find(x=>x.id===srcId);label=r?r.name:'Reminder';color=r?r.color:'#455a64';}
+      if(type==='task'){const t=S.tasks.find(x=>x.id===srcId);if(!t)return;label=t.name;color=t.color;}
+      else{const r=S.reminders.find(x=>x.id===srcId);if(!r)return;label=r.name;color=r.color||'#455a64';}
       S.entries[dk].push({id:S.nextId++,label,color,type,startH:h,endH:h+1,srcId});
       save();renderEntries();
     });
-    row.appendChild(lbl);row.appendChild(cell);grid.appendChild(row);
+    row.appendChild(lbl);row.appendChild(cell);
+    grid.insertBefore(row,entriesDiv);
   }
+  const oldNl=document.getElementById('now-line-el');if(oldNl)oldNl.remove();
   if(isToday(cur)){
     const nl=document.createElement('div');nl.className='now-line';nl.id='now-line-el';
-    nl.style.top=((now.getHours()*60+now.getMinutes())/(24*60)*24*56)+'px';
+    nl.style.top=((now.getHours()*60+now.getMinutes())/(24*60)*24*ROW_H)+'px';
     grid.appendChild(nl);
   }
-  const ov=document.createElement('div');ov.id='cal-overlay';
-  ov.style.cssText='position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none';
-  grid.appendChild(ov);
   autoPlaceReminders(dk);
   renderEntries();
-  document.getElementById('cal-panel').scrollTop=(isToday(cur)?Math.max(0,now.getHours()-1):7)*56;
+  document.getElementById('cal-panel').scrollTop=(isToday(cur)?Math.max(0,now.getHours()-1):7)*ROW_H;
 }
+
 function autoPlaceReminders(dk){
   S.reminders.forEach(r=>{
     if(!r.time)return;
@@ -300,87 +550,107 @@ function autoPlaceReminders(dk){
     }
   });
 }
+
 function renderEntries(){
   const dk=dateKey(cur);
-  const ov=document.getElementById('cal-overlay');if(!ov)return;
-  ov.innerHTML='';
+  const container=document.getElementById('cal-entries');
+  container.innerHTML='';
   const entries=(S.entries[dk]||[]).slice().sort((a,b)=>a.startH-b.startH);
   const cols=Array.from({length:24},()=>[]);
   entries.forEach(entry=>{
     let col=0;
-    outer:for(;;){for(let h=entry.startH;h<entry.endH;h++){if(cols[h].includes(col)){col++;continue outer;}}break;}
-    for(let h=entry.startH;h<Math.min(entry.endH,24);h++)cols[h].push(col);
+    outer:for(;;){for(let h=entry.startH;h<Math.min(entry.endH,24);h++){if((cols[h]||[]).includes(col)){col++;continue outer;}}break;}
+    for(let h=entry.startH;h<Math.min(entry.endH,24);h++){if(!cols[h])cols[h]=[];cols[h].push(col);}
     entry._col=col;
   });
-  const LEFT=48,maxCols=3,ROW=56;
+  const maxCols=3;
   entries.forEach(entry=>{
     const col=entry._col||0;
-    const top=entry.startH*ROW+2;
-    const ht=Math.max(20,(entry.endH-entry.startH)*ROW-4);
-    const el=document.createElement('div');el.className='cal-entry type-'+entry.type;
-    el.style.cssText='top:'+top+'px;left:calc('+LEFT+'px + '+col+' * (100% - '+LEFT+'px) / '+maxCols+');width:calc((100% - '+LEFT+'px) / '+maxCols+' - 3px);height:'+ht+'px;';
+    const top=entry.startH*ROW_H+2;
+    const height=Math.max(18,(entry.endH-entry.startH)*ROW_H-4);
+    const el=document.createElement('div');
+    el.className='cal-entry '+(entry.type==='task'?'task-entry':'rem-entry');
+    el.style.cssText='top:'+top+'px;left:calc('+col+' * 100% / '+maxCols+');width:calc(100% / '+maxCols+' - 3px);height:'+height+'px;';
     if(entry.type==='task')el.style.background=entry.color;
     else el.style.borderLeftColor=entry.color;
     const body=document.createElement('div');body.className='entry-body';
-    const lbl=document.createElement('input');lbl.className='entry-label';lbl.value=entry.label;
-    lbl.addEventListener('mousedown',e=>e.stopPropagation());
-    lbl.addEventListener('change',()=>{entry.label=lbl.value;save()});
-    lbl.addEventListener('blur',()=>{entry.label=lbl.value;save()});
+    const nm=document.createElement('input');nm.className='entry-name';nm.value=entry.label;
+    nm.addEventListener('mousedown',e=>e.stopPropagation());
+    nm.addEventListener('change',()=>{entry.label=nm.value;save()});
+    nm.addEventListener('blur',()=>{entry.label=nm.value;save()});
     const sub=document.createElement('div');sub.className='entry-sub';
     sub.textContent=(entry.type==='rem'?'Reminder':'Task')+(entry.endH-entry.startH>1?' '+fmtH(entry.startH)+'-'+fmtH(entry.endH):'');
-    body.appendChild(lbl);if(ht>30)body.appendChild(sub);el.appendChild(body);
+    body.appendChild(nm);if(height>32)body.appendChild(sub);
+    el.appendChild(body);
     const rm=document.createElement('button');rm.className='entry-rm';rm.textContent='x';
-    rm.onclick=e=>{e.stopPropagation();S.entries[dk]=S.entries[dk].filter(x=>x.id!==entry.id);if(!S.entries[dk].length)delete S.entries[dk];save();renderEntries()};
+    rm.onclick=e=>{e.stopPropagation();S.entries[dk]=(S.entries[dk]||[]).filter(x=>x.id!==entry.id);if(!S.entries[dk].length)delete S.entries[dk];save();renderEntries()};
     el.appendChild(rm);
     const rh=document.createElement('div');rh.className='resize-handle';
     rh.addEventListener('mousedown',ev=>{
       ev.preventDefault();ev.stopPropagation();
       const startY=ev.clientY,startEnd=entry.endH;
-      const onMove=e2=>{const dy=e2.clientY-startY;const ne=Math.max(entry.startH+1,Math.min(24,startEnd+Math.round(dy/ROW)));if(ne!==entry.endH){entry.endH=ne;renderEntries();}};
+      const onMove=e2=>{const dy=e2.clientY-startY;const ne=Math.max(entry.startH+1,Math.min(24,startEnd+Math.round(dy/ROW_H)));if(ne!==entry.endH){entry.endH=ne;renderEntries();}};
       const onUp=()=>{save();renderEntries();window.removeEventListener('mousemove',onMove);window.removeEventListener('mouseup',onUp)};
       window.addEventListener('mousemove',onMove);window.addEventListener('mouseup',onUp);
     });
-    el.appendChild(rh);ov.appendChild(el);
+    el.appendChild(rh);
+    container.appendChild(el);
   });
 }
 
-/* ---- TASKS ---- */
+/* ============================================================
+   TASKS
+============================================================ */
 function renderTasks(){
   const list=document.getElementById('task-list');list.innerHTML='';
   S.tasks.forEach(t=>{
-    const card=mkCard(t.color);
-    card.draggable=true;
+    const card=document.createElement('div');card.className='item-card';card.draggable=true;
     card.addEventListener('dragstart',e=>{dragItem={type:'task',id:t.id};e.dataTransfer.effectAllowed='copy';setTimeout(()=>card.classList.add('dragging'),0)});
     card.addEventListener('dragend',()=>{dragItem=null;card.classList.remove('dragging')});
     const dot=document.createElement('div');dot.className='item-dot';dot.style.background=t.color;
-    const name=mkNameInput(t.name,v=>{t.name=v;save()});
+    const nm=mkInp(t.name,v=>{t.name=v;save()});
     const del=mkDel(()=>{S.tasks=S.tasks.filter(x=>x.id!==t.id);save();renderTasks()});
-    card.appendChild(dot);card.appendChild(name);card.appendChild(del);list.appendChild(card);
+    card.appendChild(dot);card.appendChild(nm);card.appendChild(del);list.appendChild(card);
   });
 }
 
-/* ---- REMINDERS ---- */
+/* ============================================================
+   REMINDERS
+============================================================ */
 function renderReminders(){
   const list=document.getElementById('rem-list');list.innerHTML='';
   S.reminders.forEach(r=>{
-    const card=mkCard(REM_COL);
-    card.draggable=true;
+    const wrap=document.createElement('div');wrap.className='rem-wrap';wrap.style.borderLeftColor=r.color||'#455a64';
+    const card=document.createElement('div');card.className='item-card';card.draggable=true;
     card.addEventListener('dragstart',e=>{dragItem={type:'rem',id:r.id};e.dataTransfer.effectAllowed='copy';setTimeout(()=>card.classList.add('dragging'),0)});
     card.addEventListener('dragend',()=>{dragItem=null;card.classList.remove('dragging')});
-    const dot=document.createElement('div');dot.className='item-dot';dot.style.background=REM_COL;
-    const name=mkNameInput(r.name,v=>{r.name=v;save()});
-    const time=document.createElement('input');time.className='item-time';time.value=r.time||'';time.placeholder='HH:MM';
-    time.addEventListener('mousedown',e=>e.stopPropagation());
-    time.addEventListener('change',()=>{r.time=time.value;save()});
-    time.addEventListener('blur',()=>{r.time=time.value;save()});
-    const del=mkDel(()=>{S.reminders=S.reminders.filter(x=>x.id!==r.id);save();renderReminders()});
-    card.appendChild(dot);card.appendChild(name);card.appendChild(time);card.appendChild(del);list.appendChild(card);
+    const dot=document.createElement('div');dot.className='item-dot sq';dot.style.background=r.color||'#455a64';
+    const nm=mkInp(r.name,v=>{
+      r.name=v;
+      Object.values(S.entries).forEach(arr=>arr.forEach(e=>{if(e.autoId===r.id||e.srcId===r.id)e.label=v}));
+      save();renderEntries();
+    });
+    const ti=document.createElement('input');ti.className='item-time';ti.value=r.time||'';ti.placeholder='HH:MM';
+    ti.addEventListener('mousedown',e=>e.stopPropagation());
+    ti.addEventListener('change',()=>{
+      r.time=ti.value;
+      Object.keys(S.entries).forEach(dk=>{S.entries[dk]=(S.entries[dk]||[]).filter(e=>e.autoId!==r.id);if(!S.entries[dk].length)delete S.entries[dk];});
+      save();autoPlaceReminders(dateKey(cur));renderEntries();
+    });
+    ti.addEventListener('blur',()=>ti.dispatchEvent(new Event('change')));
+    const del=mkDel(()=>{
+      Object.keys(S.entries).forEach(dk=>{S.entries[dk]=(S.entries[dk]||[]).filter(e=>e.autoId!==r.id&&e.srcId!==r.id);if(!S.entries[dk].length)delete S.entries[dk];});
+      S.reminders=S.reminders.filter(x=>x.id!==r.id);save();renderReminders();renderEntries();
+    });
+    card.appendChild(dot);card.appendChild(nm);card.appendChild(ti);card.appendChild(del);
+    wrap.appendChild(card);list.appendChild(wrap);
   });
 }
 
-/* ---- HELPERS ---- */
-function mkCard(col){const c=document.createElement('div');c.className='item-card';return c}
-function mkNameInput(val,onChange){
+/* ============================================================
+   HELPERS
+============================================================ */
+function mkInp(val,onChange){
   const i=document.createElement('input');i.className='item-name';i.value=val;
   i.addEventListener('mousedown',e=>e.stopPropagation());
   i.addEventListener('change',()=>onChange(i.value));
@@ -389,17 +659,14 @@ function mkNameInput(val,onChange){
 }
 function mkDel(fn){
   const b=document.createElement('button');b.className='item-del';b.textContent='x';
-  b.addEventListener('mousedown',e=>e.stopPropagation());
-  b.onclick=fn;return b;
+  b.addEventListener('mousedown',e=>e.stopPropagation());b.onclick=fn;return b;
 }
-function fmtH(h){return h.toString().padStart(2,'0')+':00'}
-function isToday(d){const t=new Date();return d.getFullYear()===t.getFullYear()&&d.getMonth()===t.getMonth()&&d.getDate()===t.getDate()}
-function dateKey(d){return d.toISOString().slice(0,10)}
-function showToast(t,b){const el=document.getElementById('toast');document.getElementById('toast-title').textContent=t;document.getElementById('toast-body').textContent=b;el.style.display='block';clearTimeout(showToast._t);showToast._t=setTimeout(()=>el.style.display='none',4000)}
 
-/* ---- EVENTS ---- */
+/* ============================================================
+   EVENTS
+============================================================ */
 function addTask(){const i=document.getElementById('task-input');const n=i.value.trim();if(!n)return;S.tasks.push({id:S.nextId++,name:n,color:COLORS[ci++%COLORS.length]});i.value='';save();renderTasks()}
-function addRem(){const i=document.getElementById('rem-input');const n=i.value.trim();if(!n)return;S.reminders.push({id:S.nextId++,name:n,time:''});i.value='';save();renderReminders()}
+function addRem(){const i=document.getElementById('rem-input');const n=i.value.trim();if(!n)return;S.reminders.push({id:S.nextId++,name:n,time:'',color:RCOLS[ri++%RCOLS.length]});i.value='';save();renderReminders()}
 document.getElementById('task-btn').onclick=addTask;
 document.getElementById('task-input').onkeydown=e=>{if(e.key==='Enter')addTask()};
 document.getElementById('rem-btn').onclick=addRem;
@@ -407,11 +674,11 @@ document.getElementById('rem-input').onkeydown=e=>{if(e.key==='Enter')addRem()};
 document.getElementById('prev').onclick=()=>{cur=new Date(cur);cur.setDate(cur.getDate()-1);renderCal()};
 document.getElementById('next').onclick=()=>{cur=new Date(cur);cur.setDate(cur.getDate()+1);renderCal()};
 document.getElementById('today-btn').onclick=()=>{cur=new Date();cur.setHours(0,0,0,0);renderCal()};
-document.getElementById('export-btn').onclick=()=>{try{const enc=btoa(unescape(encodeURIComponent(JSON.stringify(S))));const url=location.origin+location.pathname+'?d='+enc;navigator.clipboard.writeText(url).then(()=>showToast('Link copied!','Open on another device to sync')).catch(()=>prompt('Copy:',url))}catch(e){showToast('Error','Failed')}};
-document.getElementById('import-btn').onclick=()=>{const inp=prompt('Paste sync URL:');if(!inp)return;try{let enc=inp.trim();if(enc.includes('?d='))enc=enc.split('?d=')[1].split('&')[0];const d=JSON.parse(decodeURIComponent(escape(atob(enc))));if(!d.tasks)throw 0;S=d;if(!S.clocks)S.clocks=['America/New_York','Europe/London','Asia/Tokyo'];if(!Array.isArray(S.reminders))S.reminders=[];save();renderAll();showToast('Synced!','Done')}catch(e){showToast('Error','Invalid URL')}};
+setInterval(()=>{if(isToday(cur)){const nl=document.getElementById('now-line-el');if(nl){const now=new Date();nl.style.top=((now.getHours()*60+now.getMinutes())/(24*60)*24*ROW_H)+'px';}}},60000);
 
 function renderAll(){renderClocks();renderCal();renderTasks();renderReminders()}
 renderAll();
+initCloudSync();
 </script>
 </body>
 </html>
