@@ -135,7 +135,7 @@ header h1{font-size:15px;font-weight:700;color:#1a1a2e;white-space:nowrap;flex-s
 </header>
 
 <div class="main">
-  <div class="cal-panel" id="cal-panel"></div>
+  <div class="cal-panel" id="cal-panel"><div id="cal-grid"></div></div>
   <div class="right-panel">
     <div class="panel-section">
       <div class="panel-title">Tasks</div>
@@ -256,7 +256,7 @@ function renderCal(){
   const dk=dateKey(cur);
   const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   document.getElementById('date-label').textContent=days[cur.getDay()]+', '+months[cur.getMonth()]+' '+cur.getDate();
-  const grid=document.getElementById('cal-grid');grid.innerHTML='';
+  let grid=document.getElementById('cal-grid');if(!grid){grid=document.createElement('div');grid.id='cal-grid';grid.style.position='relative';document.getElementById('cal-panel').appendChild(grid);}grid.innerHTML='';grid.style.position='relative';
   const now=new Date();
   for(let h=0;h<24;h++){
     const row=document.createElement('div');row.className='hour-row';
