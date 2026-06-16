@@ -184,7 +184,7 @@ function tzTime(z){return new Date().toLocaleTimeString('en-GB',{timeZone:z,hour
 function tzOff(z){try{const s=new Date().toLocaleString('en',{timeZone:z,timeZoneName:'shortOffset'});const m=s.match(/GMT[+-]?[\d:]*/);return m?m[0]:'GMT'}catch(e){return ''}}
 
 /* ---- STORE ---- */
-const KEY='dp_v3';
+const KEY='dp_v5';
 const COLORS=['#5c6bc0','#43a047','#e53935','#fb8c00','#00acc1','#8e24aa','#f4511e','#00897b','#d81b60','#546e7a'];
 const REM_COL='#455a64';
 let ci=0, cur=new Date(), dragItem=null;
@@ -253,43 +253,95 @@ document.getElementById('tz-modal').onclick=e=>{if(e.target===document.getElemen
 
 /* ---- CALENDAR ---- */
 function renderCal(){
-  const dk=dateKey(cur),panel=document.getElementById('cal-panel');panel.innerHTML='';
+  const dk=dateKey(cur);
   const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   document.getElementById('date-label').textContent=days[cur.getDay()]+', '+months[cur.getMonth()]+' '+cur.getDate();
+  const grid=document.getElementById('cal-grid');grid.innerHTML='';
   const now=new Date();
   for(let h=0;h<24;h++){
     const row=document.createElement('div');row.className='hour-row';
     const lbl=document.createElement('div');lbl.className='hour-label';lbl.textContent=fmtH(h);
-    const cell=document.createElement('div');cell.className='hour-cell';
+    const cell=document.createElement('div');cell.className='hour-cell';cell.dataset.h=h;
     cell.addEventListener('dragover',e=>{e.preventDefault();cell.classList.add('drag-over')});
     cell.addEventListener('dragleave',()=>cell.classList.remove('drag-over'));
     cell.addEventListener('drop',e=>{
       e.preventDefault();cell.classList.remove('drag-over');
       if(!dragItem)return;
-      const key=dk+'_'+h;
-      if(!S.slots[key])S.slots[key]=[];
-      if(S.slots[key].length>=10){showToast('Slot full','Max 10 per hour');return}
-      let label='Item',color=REM_COL;
-      if(dragItem.type==='task'){const t=S.tasks.find(x=>x.id===dragItem.id);label=t?t.name:'Task';color=t?t.color:'#5c6bc0'}
-      else{const r=S.reminders.find(x=>x.id===dragItem.id);label=r?r.name:'Reminder';color=REM_COL}
-      S.slots[key].push({id:S.nextId++,label,color});
-      save();renderCal();
+      if(!S.entries[dk])S.entries[dk]=[];
+      let label='',color='#5c6bc0',type=dragItem.type,srcId=dragItem.id;
+      if(type==='task'){const t=S.tasks.find(x=>x.id===srcId);label=t?t.name:'Task';color=t?t.color:'#5c6bc0';}
+      else{const r=S.reminders.find(x=>x.id===srcId);label=r?r.name:'Reminder';color=r?r.color:'#455a64';}
+      S.entries[dk].push({id:S.nextId++,label,color,type,startH:h,endH:h+1,srcId});
+      save();renderEntries();
     });
-    (S.slots[dk+'_'+h]||[]).forEach(entry=>{
-      const chip=document.createElement('div');chip.className='cal-chip';chip.style.background=entry.color||'#5c6bc0';
-      const txt=document.createElement('input');txt.className='chip-text';txt.value=entry.label;
-      txt.addEventListener('mousedown',e=>e.stopPropagation());
-      txt.addEventListener('change',()=>{entry.label=txt.value;save()});
-      txt.addEventListener('blur',()=>{entry.label=txt.value;save()});
-      const rm=document.createElement('button');rm.className='chip-rm';rm.textContent='x';
-      rm.addEventListener('mousedown',e=>e.stopPropagation());
-      rm.onclick=()=>{const k=dk+'_'+h;S.slots[k]=S.slots[k].filter(x=>x.id!==entry.id);if(!S.slots[k].length)delete S.slots[k];save();renderCal()};
-      chip.appendChild(txt);chip.appendChild(rm);cell.appendChild(chip);
-    });
-    if(isToday(cur)&&now.getHours()===h){const nl=document.createElement('div');nl.className='now-line';nl.style.top=(now.getMinutes()/60*100)+'%';cell.appendChild(nl)}
-    row.appendChild(lbl);row.appendChild(cell);panel.appendChild(row);
+    row.appendChild(lbl);row.appendChild(cell);grid.appendChild(row);
   }
-  panel.scrollTop=(isToday(cur)?Math.max(0,new Date().getHours()-1):7)*52;
+  if(isToday(cur)){
+    const nl=document.createElement('div');nl.className='now-line';nl.id='now-line-el';
+    nl.style.top=((now.getHours()*60+now.getMinutes())/(24*60)*24*56)+'px';
+    grid.appendChild(nl);
+  }
+  const ov=document.createElement('div');ov.id='cal-overlay';
+  ov.style.cssText='position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none';
+  grid.appendChild(ov);
+  autoPlaceReminders(dk);
+  renderEntries();
+  document.getElementById('cal-panel').scrollTop=(isToday(cur)?Math.max(0,now.getHours()-1):7)*56;
+}
+function autoPlaceReminders(dk){
+  S.reminders.forEach(r=>{
+    if(!r.time)return;
+    const m=r.time.match(/^(\d{1,2}):(\d{2})$/);if(!m)return;
+    const h=parseInt(m[1]);if(h<0||h>23)return;
+    if(!S.entries[dk])S.entries[dk]=[];
+    if(!S.entries[dk].find(e=>e.autoId===r.id)){
+      S.entries[dk].push({id:S.nextId++,label:r.name,color:r.color||'#455a64',type:'rem',startH:h,endH:h+1,autoId:r.id});
+      save();
+    }
+  });
+}
+function renderEntries(){
+  const dk=dateKey(cur);
+  const ov=document.getElementById('cal-overlay');if(!ov)return;
+  ov.innerHTML='';
+  const entries=(S.entries[dk]||[]).slice().sort((a,b)=>a.startH-b.startH);
+  const cols=Array.from({length:24},()=>[]);
+  entries.forEach(entry=>{
+    let col=0;
+    outer:for(;;){for(let h=entry.startH;h<entry.endH;h++){if(cols[h].includes(col)){col++;continue outer;}}break;}
+    for(let h=entry.startH;h<Math.min(entry.endH,24);h++)cols[h].push(col);
+    entry._col=col;
+  });
+  const LEFT=48,maxCols=3,ROW=56;
+  entries.forEach(entry=>{
+    const col=entry._col||0;
+    const top=entry.startH*ROW+2;
+    const ht=Math.max(20,(entry.endH-entry.startH)*ROW-4);
+    const el=document.createElement('div');el.className='cal-entry type-'+entry.type;
+    el.style.cssText='top:'+top+'px;left:calc('+LEFT+'px + '+col+' * (100% - '+LEFT+'px) / '+maxCols+');width:calc((100% - '+LEFT+'px) / '+maxCols+' - 3px);height:'+ht+'px;';
+    if(entry.type==='task')el.style.background=entry.color;
+    else el.style.borderLeftColor=entry.color;
+    const body=document.createElement('div');body.className='entry-body';
+    const lbl=document.createElement('input');lbl.className='entry-label';lbl.value=entry.label;
+    lbl.addEventListener('mousedown',e=>e.stopPropagation());
+    lbl.addEventListener('change',()=>{entry.label=lbl.value;save()});
+    lbl.addEventListener('blur',()=>{entry.label=lbl.value;save()});
+    const sub=document.createElement('div');sub.className='entry-sub';
+    sub.textContent=(entry.type==='rem'?'Reminder':'Task')+(entry.endH-entry.startH>1?' '+fmtH(entry.startH)+'-'+fmtH(entry.endH):'');
+    body.appendChild(lbl);if(ht>30)body.appendChild(sub);el.appendChild(body);
+    const rm=document.createElement('button');rm.className='entry-rm';rm.textContent='x';
+    rm.onclick=e=>{e.stopPropagation();S.entries[dk]=S.entries[dk].filter(x=>x.id!==entry.id);if(!S.entries[dk].length)delete S.entries[dk];save();renderEntries()};
+    el.appendChild(rm);
+    const rh=document.createElement('div');rh.className='resize-handle';
+    rh.addEventListener('mousedown',ev=>{
+      ev.preventDefault();ev.stopPropagation();
+      const startY=ev.clientY,startEnd=entry.endH;
+      const onMove=e2=>{const dy=e2.clientY-startY;const ne=Math.max(entry.startH+1,Math.min(24,startEnd+Math.round(dy/ROW)));if(ne!==entry.endH){entry.endH=ne;renderEntries();}};
+      const onUp=()=>{save();renderEntries();window.removeEventListener('mousemove',onMove);window.removeEventListener('mouseup',onUp)};
+      window.addEventListener('mousemove',onMove);window.addEventListener('mouseup',onUp);
+    });
+    el.appendChild(rh);ov.appendChild(el);
+  });
 }
 
 /* ---- TASKS ---- */
