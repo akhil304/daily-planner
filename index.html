@@ -82,6 +82,32 @@ header h1{font-size:15px;font-weight:700;color:#1a1a2e;white-space:nowrap;flex-s
 #toast{display:none;position:fixed;bottom:20px;right:20px;background:#323232;color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;z-index:9999;max-width:300px}
 #toast-title{font-weight:700;margin-bottom:2px}
 #toast-body{font-size:12px;opacity:.85}
+
+/* ===== MOBILE RESPONSIVE ===== */
+@media(max-width:640px){
+  header{flex-direction:column;padding:0}
+  .header-top{padding:6px 10px;width:100%}
+  header h1{font-size:13px}
+  .nav-btn{padding:3px 7px;font-size:11px;min-height:30px}
+  .sync-btn{padding:3px 6px;font-size:10px;min-height:30px}
+  #date-label{font-size:12px;min-width:80px}
+  .clocks-row{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:4px 10px 6px;flex-wrap:nowrap}
+  .clocks-row::-webkit-scrollbar{display:none}
+  .clock-box{min-width:80px;padding:5px 12px;flex-shrink:0}
+  .clock-time{font-size:13px}
+  .clock-label{font-size:8px}
+  .main{flex-direction:column}
+  .cal-panel{border-right:none;flex:1;min-height:0}
+  .right-panel{width:100%;border-left:none;border-top:1px solid #e8e8e8;height:46dvh;flex-shrink:0;overflow-y:auto}
+  .panel-section+.panel-section{display:none}
+  .panel-section{padding:8px 10px}
+  .item-card{padding:8px 9px;min-height:42px}
+  .item-name{font-size:13px}
+  .add-row input{font-size:13px;padding:7px 9px}
+  .panel-title{margin-bottom:6px}
+  #toast{bottom:8px;border-radius:12px}
+  .drag-hint{display:none}
+}
 </style>
 </head>
 <body>
