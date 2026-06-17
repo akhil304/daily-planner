@@ -93,47 +93,49 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f2f5;display:flex
    DESKTOP (>= 640px)
 ===================================================== */
 @media(min-width:640px){
-  /* ── DESKTOP HEADER: flex with drag-resizable sections ── */
-  .desk-header{display:flex;flex-shrink:0;background:#fff;border-bottom:1px solid #e0e0e0;padding:0;align-items:stretch;height:56px;position:relative;overflow:hidden}
-  /* Each header section is a draggable-resize zone */
-  .hdr-sec{display:flex;align-items:center;justify-content:center;padding:0 10px;position:relative;min-width:80px;flex-shrink:0;overflow:hidden}
-  /* Drag handle between sections */
-  .hdr-drag{width:4px;flex-shrink:0;cursor:col-resize;background:#f0f0f0;position:relative;z-index:5;transition:background .15s}
-  .hdr-drag:hover,.hdr-drag.dragging{background:#ce93d8}
-  /* Title section */
-  .hdr-title{background:#fff}
-  .desk-h1{font-size:17px;font-weight:800;color:#1a1a2e;white-space:nowrap;letter-spacing:-.3px}
-  /* Clocks section */
-  .hdr-clocks{background:#fafbff;flex:1;min-width:0}
-  .desk-clocks{display:flex;gap:5px;width:100%;overflow:hidden}
-  .clock-box{padding:4px 6px;min-width:70px;flex:1}
-  .ck-label{font-size:9px!important;letter-spacing:.2px}
+  /* ── DESKTOP HEADER: 4 sections with visible drag handles ── */
+  .desk-header{display:flex;flex-shrink:0;background:#fff;border-bottom:1px solid #e0e0e0;padding:0;align-items:stretch;height:58px;overflow:visible}
+  .hdr-sec{display:flex;align-items:center;justify-content:center;padding:0 12px;overflow:hidden;flex-shrink:0}
+  /* Visible drag handles — 6px wide with grip dots */
+  .hdr-drag{width:6px;flex-shrink:0;cursor:col-resize;background:#e8e8e8;position:relative;transition:background .15s;display:flex;align-items:center;justify-content:center}
+  .hdr-drag::after{content:'⋮';font-size:14px;color:#bbb;line-height:1;pointer-events:none}
+  .hdr-drag:hover{background:#c5cae9}
+  .hdr-drag:hover::after{color:#5c6bc0}
+  .hdr-drag.dragging{background:#9fa8da}
+  /* Section 1: Title — fixed small */
+  .hdr-title{background:#fff;width:140px}
+  .desk-h1{font-size:16px;font-weight:800;color:#1a1a2e;white-space:nowrap}
+  /* Section 2: Clocks — takes remaining space */
+  .hdr-clocks{background:#fafbff;flex:1;min-width:200px}
+  .desk-clocks{display:flex;gap:5px;width:100%}
+  .clock-box{padding:4px 8px;min-width:80px;flex:1}
+  .ck-label{font-size:9px!important}
   .ck-time{font-size:12px!important}
   .ck-sub{font-size:8px!important}
-  /* Date nav section — centred */
-  .hdr-date{background:linear-gradient(135deg,#f9f0ff,#f0e8ff);border-left:1px solid #e8d5f5;border-right:1px solid #e8d5f5}
-  .desk-nav-box{display:flex;flex-direction:column;align-items:center;gap:2px;white-space:nowrap}
-  .dnb-top{display:flex;align-items:center;gap:4px}
-  .dnb-nav{background:rgba(255,255,255,.8);border:1px solid #ce93d8;border-radius:6px;padding:2px 9px;cursor:pointer;font-size:15px;color:#6a1b9a;line-height:1.4;font-weight:800}
+  /* Section 3: Date nav — fixed width, centred content */
+  .hdr-date{background:linear-gradient(135deg,#f9f0ff,#ede7f6);width:220px}
+  .desk-nav-box{display:flex;flex-direction:column;align-items:center;gap:3px;white-space:nowrap;width:100%}
+  .dnb-top{display:flex;align-items:center;gap:5px}
+  .dnb-nav{background:rgba(255,255,255,.8);border:1px solid #ce93d8;border-radius:6px;padding:2px 9px;cursor:pointer;font-size:16px;color:#6a1b9a;font-weight:800;line-height:1.3}
   .dnb-nav:hover{background:#ede7f6}
-  #desk-date{font-size:14px;font-weight:800;color:#4a148c;white-space:nowrap;padding:0 4px}
+  #desk-date{font-size:13px;font-weight:800;color:#4a148c;white-space:nowrap}
   #desk-today{background:#7b1fa2;color:#fff;border:none;border-radius:6px;padding:2px 10px;font-size:11px;font-weight:700;cursor:pointer}
-  /* Status corner section */
-  .hdr-status{background:#fafafa;border-left:1px solid #f0f0f0;flex-direction:column;gap:4px;padding:6px 12px}
-  .sync-pill{display:flex;align-items:center;gap:3px;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;border:none;transition:background .2s;white-space:nowrap}
+  /* Section 4: Status — fixed width */
+  .hdr-status{background:#fafafa;border-left:2px solid #f0f0f0;width:120px;flex-direction:column;gap:4px;align-items:flex-start;padding:6px 10px}
+  .sync-pill{display:flex;align-items:center;gap:4px;border-radius:20px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer;border:none;white-space:nowrap;width:100%}
   .sync-pill.ok{background:#e8f5e9;color:#2e7d32}
-  .sync-pill.ok::before{content:'●';color:#43a047;font-size:8px}
+  .sync-pill.ok::before{content:'●';color:#43a047;font-size:7px}
   .sync-pill.err{background:#ffebee;color:#c62828}
-  .sync-pill.err::before{content:'●';color:#e53935;font-size:8px}
+  .sync-pill.err::before{content:'●';color:#e53935;font-size:7px}
   .sync-pill.busy{background:#fff8e1;color:#f57f17}
-  .sync-pill.busy::before{content:'◌';color:#ff8f00;font-size:8px}
-  .sheet-pill{display:flex;align-items:center;gap:3px;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;border:none;cursor:default;white-space:nowrap}
+  .sync-pill.busy::before{content:'◌';color:#ff8f00;font-size:7px}
+  .sheet-pill{display:flex;align-items:center;gap:4px;border-radius:20px;padding:3px 8px;font-size:10px;font-weight:700;border:none;cursor:default;white-space:nowrap;width:100%}
   .sheet-pill.ok{background:#e8f5e9;color:#2e7d32}
-  .sheet-pill.ok::before{content:'●';color:#43a047;font-size:8px}
+  .sheet-pill.ok::before{content:'●';color:#43a047;font-size:7px}
   .sheet-pill.err{background:#ffebee;color:#c62828}
-  .sheet-pill.err::before{content:'●';color:#e53935;font-size:8px}
+  .sheet-pill.err::before{content:'●';color:#e53935;font-size:7px}
   .sheet-pill.busy{background:#fff8e1;color:#f57f17}
-  .sheet-pill.busy::before{content:'◌';color:#ff8f00;font-size:8px}
+  .sheet-pill.busy::before{content:'◌';color:#ff8f00;font-size:7px}
   #desk-sync{display:none}
   /* Desktop main split */
   .desk-main{display:flex;flex:1;overflow:hidden}
@@ -387,11 +389,13 @@ create policy "public rw" on planner for all using (true) with check (true);</co
   function initHdrDrag(){
     const header = document.getElementById('desk-header');
     if(!header) return;
-    // Set initial widths based on current render
-    SEC_IDS.forEach(id=>{
-      const el=document.getElementById(id);
-      if(el && !el.style.width) el.style.width = el.offsetWidth+'px';
-    });
+    // Don't reset CSS-defined widths — they're already set
+    // Just ensure flex sections get locked widths for drag
+    const s2=document.getElementById('hdr-s2');
+    if(s2 && !s2.style.width && s2.offsetWidth>0){
+      s2.style.width=s2.offsetWidth+'px';
+      s2.style.flex='none';
+    }
 
     header.querySelectorAll('.hdr-drag').forEach(handle=>{
       let dragging=false, startX=0, secA, secB, wA0, wB0;
