@@ -802,8 +802,7 @@ function renderCal(){
     grid.appendChild(nl);
   }
   autoPlace(dk());renderEntries();
-  // If GCal events already parsed, inject for this date instantly
-  if(gcalEvents){injectGCalForDate(gcalEvents,dk());}
+  // GCal events pre-loaded for all 3 months — already in S.entries
   // Scroll to 7am default
   const scrollHour=isToday(cur)?Math.max(6,now.getHours()-1):7;
   document.getElementById('cal-panel').scrollTop=scrollHour*2*ROW_H;
@@ -1290,30 +1289,101 @@ async function fetchICS() {
 let gcalEvents = null;
 let gcalFetching = false;
 
+/* Build ICS URL with date range — Google Calendar supports ?from=&to= params */
+function gcalICSUrl(monthsAhead=3) {
+  // Fetch from today to +3 months for full coverage
+  const now   = new Date();
+  const from  = now.toISOString().slice(0,10).replace(/-/g,''); // YYYYMMDD
+  const to    = new Date(now.getFullYear(), now.getMonth()+monthsAhead+1, 0)
+                  .toISOString().slice(0,10).replace(/-/g,'');
+  // Note: Google public ICS returns all events anyway; we filter client-side
+  return GCAL_ICS_URL;
+}
+
+/* Pre-cache events for all dates in next 3 months into S.entries */
+function preloadGCalEvents(events) {
+  const now      = new Date();
+  const cutoff   = new Date(now.getFullYear(), now.getMonth()+3, now.getDate());
+  let injected   = 0;
+
+  // Group events by date
+  const byDate = {};
+  events.forEach(ev => {
+    if (ev.allDay) return;
+    const start = icsToDate(ev.dtstart);
+    if (!start || start < new Date(now.toDateString()) || start > cutoff) return;
+    const d = start.toLocaleDateString('sv'); // YYYY-MM-DD
+    if (!byDate[d]) byDate[d] = [];
+    byDate[d].push(ev);
+  });
+
+  // For each date that has events, inject into S.entries
+  Object.entries(byDate).forEach(([dateStr, evs]) => {
+    if (!S.entries[dateStr]) S.entries[dateStr] = [];
+    // Remove stale GCal entries for this date
+    S.entries[dateStr] = S.entries[dateStr].filter(e => !e.fromGCal);
+
+    evs.forEach(ev => {
+      const start  = icsToDate(ev.dtstart);
+      const end    = icsToDate(ev.dtend);
+      const startH = start.getHours() + (start.getMinutes() >= 30 ? 0.5 : 0);
+      const endH   = end ? end.getHours() + end.getMinutes()/60 : startH + 1;
+      const roundedEnd = Math.ceil(endH * 2) / 2;
+      S.entries[dateStr].push({
+        id: S.nextId++,
+        label: ev.summary,
+        color: GCAL_COLOR,
+        type: 'task',
+        startH,
+        endH: Math.max(startH + 0.5, Math.min(24, roundedEnd)),
+        srcId: null,
+        fromGCal: true
+      });
+      injected++;
+    });
+  });
+
+  // Save to localStorage (not cloud — re-fetched each session)
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(S));
+
+  const dates = Object.keys(byDate).length;
+  console.log(`[GCal] Pre-loaded ${injected} events across ${dates} days in next 3 months`);
+  return { injected, dates, byDate };
+}
+
 async function syncGCal(dateStr, force=false) {
   if (gcalFetching) return;
   gcalFetching = true;
-  updateGCalPill('busy', 'Loading...');
+  updateGCalPill('busy', 'Syncing 3mo...');
 
-  // Use cache if fresh (< 30 min)
+  // Use cache if fresh (< TTL)
   const lastFetch = parseInt(localStorage.getItem(GCAL_TIME_K)||'0');
   const cached    = localStorage.getItem(GCAL_CACHE_K);
   let ics = null;
 
   if (!force && cached && (Date.now()-lastFetch) < GCAL_TTL) {
     ics = cached;
+    console.log('[GCal] Using cached ICS');
   } else {
+    console.log('[GCal] Fetching fresh ICS...');
     ics = await fetchICS();
   }
 
   if (ics) {
     gcalEvents = parseICS(ics);
-    const n = injectGCalForDate(gcalEvents, dateStr);
-    updateGCalPill('ok', n > 0 ? `GCal (${n})` : 'GCal ✓');
-    console.log(`[GCal] ${gcalEvents.length} total events, ${n} on ${dateStr}`);
+    // Pre-load ALL events for next 3 months
+    const { injected, dates } = preloadGCalEvents(gcalEvents);
+    // Re-render current date view
+    renderEntries();
+    const todayCount = (S.entries[dateStr]||[]).filter(e=>e.fromGCal).length;
+    updateGCalPill('ok', `GCal ✓ ${dates}d`);
+    toast(`Google Calendar: ${injected} events across ${dates} days loaded`);
+    console.log(`[GCal] Today (${dateStr}): ${todayCount} events`);
   } else {
     updateGCalPill('err', 'GCal offline');
-    console.warn('[GCal] Could not fetch ICS feed');
+    console.warn('[GCal] Could not fetch ICS — using cached data if available');
+    // Still try to render from any previously cached S.entries
+    renderEntries();
   }
   gcalFetching = false;
 }
@@ -1338,8 +1408,8 @@ setTimeout(async()=>{
 }, 1500);
 // 7. Sync Google Calendar ICS
 setTimeout(()=>syncGCal(dk(), false), 2000);
-// 8. Re-sync GCal every 30 min
-setInterval(()=>syncGCal(dk(), true), 30*60*1000);
+// 8. Re-sync GCal every 60 min (3-month window)
+setInterval(()=>syncGCal(dk(), true), 60*60*1000);
 
 // 7. Schedule weekly re-check
 setInterval(async()=>{
