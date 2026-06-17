@@ -92,39 +92,47 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f2f5;display:flex
    DESKTOP (>= 640px)
 ===================================================== */
 @media(min-width:640px){
-  /* Desktop header: h1 | clocks (½ shrink) | date CENTRED | status+actions corner */
-  .desk-header{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;flex-shrink:0;background:#fff;border-bottom:1px solid #e0e0e0;padding:6px 14px;align-items:center;gap:10px}
+  /* ── DESKTOP HEADER: flex with drag-resizable sections ── */
+  .desk-header{display:flex;flex-shrink:0;background:#fff;border-bottom:1px solid #e0e0e0;padding:0;align-items:stretch;height:56px;position:relative;overflow:hidden}
+  /* Each header section is a draggable-resize zone */
+  .hdr-sec{display:flex;align-items:center;justify-content:center;padding:0 10px;position:relative;min-width:80px;flex-shrink:0;overflow:hidden}
+  /* Drag handle between sections */
+  .hdr-drag{width:4px;flex-shrink:0;cursor:col-resize;background:#f0f0f0;position:relative;z-index:5;transition:background .15s}
+  .hdr-drag:hover,.hdr-drag.dragging{background:#ce93d8}
+  /* Title section */
+  .hdr-title{background:#fff}
   .desk-h1{font-size:17px;font-weight:800;color:#1a1a2e;white-space:nowrap;letter-spacing:-.3px}
-  /* Clocks: half the available space, compact */
-  .desk-clocks{display:flex;gap:5px;overflow:hidden;min-width:0;max-width:50%}
-  .clock-box{padding:4px 8px;min-width:0;flex:1}
-  .ck-label{font-size:9px!important;letter-spacing:.3px}
+  /* Clocks section */
+  .hdr-clocks{background:#fafbff;flex:1;min-width:0}
+  .desk-clocks{display:flex;gap:5px;width:100%;overflow:hidden}
+  .clock-box{padding:4px 6px;min-width:70px;flex:1}
+  .ck-label{font-size:9px!important;letter-spacing:.2px}
   .ck-time{font-size:12px!important}
   .ck-sub{font-size:8px!important}
-  /* Date nav: centred box */
-  .desk-nav-box{background:linear-gradient(135deg,#f5f0ff,#ede7f6);border:1px solid #ce93d8;border-radius:12px;padding:5px 12px;display:flex;flex-direction:column;align-items:center;gap:3px;white-space:nowrap;flex-shrink:0}
-  .dnb-top{display:flex;align-items:center;gap:6px}
-  .dnb-nav{background:rgba(255,255,255,.8);border:1px solid #ce93d8;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:15px;color:#6a1b9a;line-height:1.4;font-weight:700}
+  /* Date nav section — centred */
+  .hdr-date{background:linear-gradient(135deg,#f9f0ff,#f0e8ff);border-left:1px solid #e8d5f5;border-right:1px solid #e8d5f5}
+  .desk-nav-box{display:flex;flex-direction:column;align-items:center;gap:2px;white-space:nowrap}
+  .dnb-top{display:flex;align-items:center;gap:4px}
+  .dnb-nav{background:rgba(255,255,255,.8);border:1px solid #ce93d8;border-radius:6px;padding:2px 9px;cursor:pointer;font-size:15px;color:#6a1b9a;line-height:1.4;font-weight:800}
   .dnb-nav:hover{background:#ede7f6}
-  #desk-date{font-size:15px;font-weight:800;color:#4a148c;white-space:nowrap}
-  #desk-today{background:#7b1fa2;color:#fff;border:none;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700;cursor:pointer}
-  /* Status + sync corner */
-  .desk-corner{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
-  .corner-row{display:flex;align-items:center;gap:5px}
-  /* Cloud sync pill */
-  .sync-pill{display:flex;align-items:center;gap:4px;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;border:none;transition:background .2s}
+  #desk-date{font-size:14px;font-weight:800;color:#4a148c;white-space:nowrap;padding:0 4px}
+  #desk-today{background:#7b1fa2;color:#fff;border:none;border-radius:6px;padding:2px 10px;font-size:11px;font-weight:700;cursor:pointer}
+  /* Status corner section */
+  .hdr-status{background:#fafafa;border-left:1px solid #f0f0f0;flex-direction:column;gap:4px;padding:6px 12px}
+  .sync-pill{display:flex;align-items:center;gap:3px;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;border:none;transition:background .2s;white-space:nowrap}
   .sync-pill.ok{background:#e8f5e9;color:#2e7d32}
-  .sync-pill.ok::before{content:'●';color:#43a047;margin-right:2px}
+  .sync-pill.ok::before{content:'●';color:#43a047;font-size:8px}
   .sync-pill.err{background:#ffebee;color:#c62828}
-  .sync-pill.err::before{content:'●';color:#e53935;margin-right:2px}
+  .sync-pill.err::before{content:'●';color:#e53935;font-size:8px}
   .sync-pill.busy{background:#fff8e1;color:#f57f17}
-  .sync-pill.busy::before{content:'◌';color:#ff8f00;margin-right:2px}
-  /* Sheet sync pill */
-  .sheet-pill{display:flex;align-items:center;gap:4px;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;border:none;cursor:default}
+  .sync-pill.busy::before{content:'◌';color:#ff8f00;font-size:8px}
+  .sheet-pill{display:flex;align-items:center;gap:3px;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;border:none;cursor:default;white-space:nowrap}
   .sheet-pill.ok{background:#e8f5e9;color:#2e7d32}
-  .sheet-pill.ok::before{content:'●';color:#43a047;margin-right:2px}
+  .sheet-pill.ok::before{content:'●';color:#43a047;font-size:8px}
   .sheet-pill.err{background:#ffebee;color:#c62828}
-  .sheet-pill.err::before{content:'●';color:#e53935;margin-right:2px}
+  .sheet-pill.err::before{content:'●';color:#e53935;font-size:8px}
+  .sheet-pill.busy{background:#fff8e1;color:#f57f17}
+  .sheet-pill.busy::before{content:'◌';color:#ff8f00;font-size:8px}
   #desk-sync{display:none}
   /* Desktop main split */
   .desk-main{display:flex;flex:1;overflow:hidden}
@@ -257,9 +265,23 @@ create policy "public rw" on planner for all using (true) with check (true);</co
 <div id="toast"></div>
 
 <!-- ========== DESKTOP ========== -->
-<div class="desk-header">
-  <span class="desk-h1">Daily Planner</span>
-  <div class="desk-clocks" id="desk-clocks"></div>
+<div class="desk-header" id="desk-header">
+  <div class="hdr-sec hdr-title" id="hdr-s1">
+    <span class="desk-h1">Daily Planner</span>
+  </div>
+  <div class="hdr-drag" data-drag="1"></div>
+  <div class="hdr-sec hdr-clocks" id="hdr-s2">
+    <div class="desk-clocks" id="desk-clocks"></div>
+  </div>
+  <div class="hdr-drag" data-drag="2"></div>
+  <div class="hdr-sec hdr-date" id="hdr-s3">
+    <div id="desk-clocks-nav"></div>
+  </div>
+  <div class="hdr-drag" data-drag="3"></div>
+  <div class="hdr-sec hdr-status" id="hdr-s4">
+    <button class="sync-pill err" id="cloud-pill" onclick="openSync()">&#9729; Cloud</button>
+    <span class="sheet-pill busy" id="sheet-pill">&#9783; Sheet</span>
+  </div>
 </div>
 <div class="desk-main">
   <div class="cal-panel desk-cal" id="cal-panel">
@@ -355,6 +377,66 @@ create policy "public rw" on planner for all using (true) with check (true);</co
 </nav>
 
 <script>
+/* ---- HEADER SECTION DRAG-RESIZE ---- */
+(function(){
+  // Store widths in px for each section
+  const SEC_IDS = ['hdr-s1','hdr-s2','hdr-s3','hdr-s4'];
+  const MIN_W = {s1:100, s2:150, s3:160, s4:100};
+
+  function initHdrDrag(){
+    const header = document.getElementById('desk-header');
+    if(!header) return;
+    // Set initial widths based on current render
+    SEC_IDS.forEach(id=>{
+      const el=document.getElementById(id);
+      if(el && !el.style.width) el.style.width = el.offsetWidth+'px';
+    });
+
+    header.querySelectorAll('.hdr-drag').forEach(handle=>{
+      let dragging=false, startX=0, secA, secB, wA0, wB0;
+      const idx = parseInt(handle.dataset.drag);
+
+      handle.addEventListener('mousedown', e=>{
+        e.preventDefault();
+        dragging=true;
+        startX=e.clientX;
+        secA=document.getElementById('hdr-s'+idx);
+        secB=document.getElementById('hdr-s'+(idx+1));
+        wA0=secA.offsetWidth;
+        wB0=secB.offsetWidth;
+        handle.classList.add('dragging');
+        document.body.style.cursor='col-resize';
+        document.body.style.userSelect='none';
+      });
+
+      document.addEventListener('mousemove', e=>{
+        if(!dragging)return;
+        const dx=e.clientX-startX;
+        const minA=Object.values(MIN_W)[idx-1]||80;
+        const minB=Object.values(MIN_W)[idx]||80;
+        const nwA=Math.max(minA, wA0+dx);
+        const nwB=Math.max(minB, wB0-dx);
+        secA.style.width=nwA+'px';
+        secA.style.flex='none';
+        secB.style.width=nwB+'px';
+        secB.style.flex=idx===1?'1':'none'; // clocks section keeps flex:1 behaviour
+      });
+
+      document.addEventListener('mouseup', ()=>{
+        if(!dragging)return;
+        dragging=false;
+        handle.classList.remove('dragging');
+        document.body.style.cursor='';
+        document.body.style.userSelect='';
+      });
+    });
+  }
+
+  // Init after DOM ready
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', initHdrDrag);
+  else setTimeout(initHdrDrag, 100);
+})();
+
 /* ---- DETECT MOBILE ---- */
 const isMob=()=>window.innerWidth<640;
 
@@ -475,14 +557,9 @@ function renderClocks(){
       const b=mk('div','clock-box');b.innerHTML='<span class="ck-label">'+flag(e.c)+' '+e.n+'</span><span class="ck-time" id="ckd-'+i+'">--:--:--</span><span class="ck-sub">'+tzOff(z)+'</span>';
       b.onclick=()=>{tzSlot=i;openPicker()};dc.appendChild(b);
     });
-    // Nav box (date centred)
-    const nb=mk('div','desk-nav-box');
-    nb.innerHTML='<div class="dnb-top"><button class="dnb-nav" id="d-prev">&#8249;</button><span id="desk-date"></span><button class="dnb-nav" id="d-next">&#8250;</button></div><div style="display:flex;gap:4px"><button id="desk-today">Today</button></div>';
-    dc.appendChild(nb);
-    // Corner: status pills + sync button
-    let corner=document.getElementById('desk-corner-el');
-    if(!corner){corner=mk('div','desk-corner');corner.id='desk-corner-el';dc.parentElement.appendChild(corner);}
-    corner.innerHTML='<div class="corner-row"><button class="sync-pill err" id="cloud-pill" onclick="openSync()">&#9729; Cloud</button><span class="sheet-pill err" id="sheet-pill">&#9783; Sheet</span></div>';
+    // Nav box goes into section 3
+    const navCont=document.getElementById('desk-clocks-nav');
+    if(navCont){navCont.innerHTML='';const nb=mk('div','desk-nav-box');nb.innerHTML='<div class="dnb-top"><button class="dnb-nav" id="d-prev">&#8249;</button><span id="desk-date"></span><button class="dnb-nav" id="d-next">&#8250;</button></div><div style="display:flex;gap:4px;justify-content:center"><button id="desk-today">Today</button></div>';navCont.appendChild(nb);}
     document.getElementById('d-prev').onclick=()=>{cur=new Date(cur);cur.setDate(cur.getDate()-1);renderCal()};
     document.getElementById('d-next').onclick=()=>{cur=new Date(cur);cur.setDate(cur.getDate()+1);renderCal()};
     document.getElementById('desk-today').onclick=()=>{cur=new Date();cur.setHours(0,0,0,0);renderCal()};
