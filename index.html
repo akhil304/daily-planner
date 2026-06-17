@@ -686,10 +686,91 @@ function mountMobCal(){
 
 setInterval(()=>{if(isToday(cur)){const nl=document.getElementById('now-ln');if(nl){const n=new Date();nl.style.top=((n.getHours()*60+n.getMinutes())/(24*60)*24*ROW_H)+'px';}}},60000);
 
+
+/* ---- GOOGLE SHEET INTEGRATION ----
+   Source: Schedule 2026
+   Auto-places "Another World" 4pm-9pm on Akhil's work days
+   Last synced: June 16 2026
+-------------------------------------------------- */
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/18gydYMTEUxespam-b1nyuiKv6QYD-YULqRu1-AWUaN0/pub?output=csv&gid=0';
+const AKHIL_WORK_DAYS = ['2026-06-02', '2026-06-04', '2026-06-05', '2026-06-09', '2026-06-10', '2026-06-12', '2026-06-13', '2026-06-14', '2026-06-17', '2026-06-19', '2026-06-20', '2026-06-22', '2026-06-25', '2026-06-27', '2026-06-28', '2026-07-01', '2026-07-02', '2026-07-04', '2026-07-05', '2026-07-07', '2026-07-08', '2026-07-10', '2026-07-11', '2026-07-17', '2026-07-19', '2026-07-20', '2026-07-22', '2026-07-23', '2026-07-25', '2026-07-26', '2026-07-28', '2026-07-29', '2026-07-31'];
+const AW_TASK_COLOR = '#7b1fa2'; // purple - distinctive for "Another World"
+const AW_TASK_NAME = 'Another World';
+const AW_START_H = 16; // 4pm
+const AW_END_H = 21;   // 9pm
+
+function injectAnotherWorld() {
+  AKHIL_WORK_DAYS.forEach(dateStr => {
+    if (!S.entries[dateStr]) S.entries[dateStr] = [];
+    // Check not already added
+    const already = S.entries[dateStr].find(e => e.label === AW_TASK_NAME && e.startH === AW_START_H);
+    if (!already) {
+      S.entries[dateStr].push({
+        id: S.nextId++,
+        label: AW_TASK_NAME,
+        color: AW_TASK_COLOR,
+        type: 'task',
+        startH: AW_START_H,
+        endH: AW_END_H,
+        srcId: null,
+        fromSheet: true  // mark so we can refresh without duplicates
+      });
+    }
+  });
+  saveL(S);
+  renderEntries();
+}
+
+async function refreshSheetData() {
+  // Try to fetch latest sheet data to pick up any schedule changes
+  try {
+    const r = await fetch(SHEET_URL + '&t=' + Date.now());
+    if (!r.ok) return;
+    const text = await r.text();
+    const lines = text.trim().split('\n').slice(1); // skip header
+    // Parse CSV: Date, Day, Employee1, Employee2, Notes...
+    const newAkhilDates = [];
+    lines.forEach(line => {
+      const cols = line.split(',').map(c => c.replace(/^"|"$/g,'').trim());
+      const dateRaw = cols[0]; // e.g. "June 2"
+      const emp1 = cols[2] || '';
+      const emp2 = cols[3] || '';
+      if ((emp1.includes('Akhil') || emp2.includes('Akhil')) && dateRaw) {
+        try {
+          const d = new Date(dateRaw + ' 2026');
+          if (!isNaN(d)) newAkhilDates.push(d.toISOString().slice(0,10));
+        } catch(e) {}
+      }
+    });
+    if (newAkhilDates.length > 5) {
+      // Remove old sheet entries first
+      Object.keys(S.entries).forEach(dk => {
+        S.entries[dk] = S.entries[dk].filter(e => !e.fromSheet);
+        if (!S.entries[dk].length) delete S.entries[dk];
+      });
+      // Re-inject with fresh dates
+      newAkhilDates.forEach(dateStr => {
+        if (!S.entries[dateStr]) S.entries[dateStr] = [];
+        if (!S.entries[dateStr].find(e => e.label === AW_TASK_NAME && e.startH === AW_START_H)) {
+          S.entries[dateStr].push({id: S.nextId++, label: AW_TASK_NAME, color: AW_TASK_COLOR, type: 'task', startH: AW_START_H, endH: AW_END_H, srcId: null, fromSheet: true});
+        }
+      });
+      saveL(S);
+      renderEntries();
+      toast('Schedule synced from Google Sheets');
+    }
+  } catch(e) {
+    // Silently fail - use cached data
+  }
+}
+
 function renderAll(){renderClocks();renderCal();renderLists();}
 renderAll();
 mountMobCal();
+injectAnotherWorld();
 initCloud();
+// Refresh sheet data in background after 2s
+setTimeout(refreshSheetData, 2000);
 </script>
 </body>
 </html>
