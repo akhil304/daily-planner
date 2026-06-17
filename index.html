@@ -93,49 +93,43 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f2f5;display:flex
    DESKTOP (>= 640px)
 ===================================================== */
 @media(min-width:640px){
-  /* ── DESKTOP HEADER: 4 sections with visible drag handles ── */
-  .desk-header{display:flex;flex-shrink:0;background:#fff;border-bottom:1px solid #e0e0e0;padding:0;align-items:stretch;height:58px;overflow:visible}
-  .hdr-sec{display:flex;align-items:center;justify-content:center;padding:0 12px;overflow:hidden;flex-shrink:0}
-  /* Visible drag handles — 6px wide with grip dots */
-  .hdr-drag{width:6px;flex-shrink:0;cursor:col-resize;background:#e8e8e8;position:relative;transition:background .15s;display:flex;align-items:center;justify-content:center}
-  .hdr-drag::after{content:'⋮';font-size:14px;color:#bbb;line-height:1;pointer-events:none}
-  .hdr-drag:hover{background:#c5cae9}
-  .hdr-drag:hover::after{color:#5c6bc0}
-  .hdr-drag.dragging{background:#9fa8da}
-  /* Section 1: Title — fixed small */
-  .hdr-title{background:#fff;width:140px}
-  .desk-h1{font-size:16px;font-weight:800;color:#1a1a2e;white-space:nowrap}
-  /* Section 2: Clocks — takes remaining space */
-  .hdr-clocks{background:#fafbff;flex:1;min-width:200px}
-  .desk-clocks{display:flex;gap:5px;width:100%}
-  .clock-box{padding:4px 8px;min-width:80px;flex:1}
-  .ck-label{font-size:9px!important}
-  .ck-time{font-size:12px!important}
+  /* ── DESKTOP HEADER ──
+     Layout: [Title] [‹ Date Today ›] [Local][NY][London] [●Cloud ●Sheet]
+     Popular pattern: title left, nav CENTRED, clocks right of nav, status far right
+  ── */
+  .desk-header{display:flex;flex-shrink:0;background:#fff;border-bottom:1px solid #e0e0e0;padding:0 14px;align-items:center;height:52px;gap:12px}
+  .desk-h1{font-size:16px;font-weight:800;color:#1a1a2e;white-space:nowrap;flex-shrink:0;margin-right:4px}
+  /* Date nav — compact pill, sits right after title */
+  .desk-nav-box{display:flex;align-items:center;gap:6px;background:#f5f0ff;border:1px solid #ce93d8;border-radius:20px;padding:4px 10px;flex-shrink:0}
+  .dnb-nav{background:none;border:none;cursor:pointer;font-size:16px;color:#7b1fa2;font-weight:800;line-height:1;padding:0 2px}
+  .dnb-nav:hover{color:#4a148c}
+  #desk-date{font-size:13px;font-weight:700;color:#4a148c;white-space:nowrap;min-width:90px;text-align:center}
+  #desk-today{background:#7b1fa2;color:#fff;border:none;border-radius:12px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
+  #desk-today:hover{background:#6a1b9a}
+  /* Clocks — compact, fills remaining space */
+  .desk-clocks{display:flex;gap:6px;flex:1;overflow:hidden;min-width:0}
+  .clock-box{padding:3px 8px;min-width:0;flex:1;border-radius:8px}
+  .ck-label{font-size:9px!important;letter-spacing:.2px}
+  .ck-time{font-size:12px!important;letter-spacing:.2px}
   .ck-sub{font-size:8px!important}
-  /* Section 3: Date nav — fixed width, centred content */
-  .hdr-date{background:linear-gradient(135deg,#f9f0ff,#ede7f6);width:220px}
-  .desk-nav-box{display:flex;flex-direction:column;align-items:center;gap:3px;white-space:nowrap;width:100%}
-  .dnb-top{display:flex;align-items:center;gap:5px}
-  .dnb-nav{background:rgba(255,255,255,.8);border:1px solid #ce93d8;border-radius:6px;padding:2px 9px;cursor:pointer;font-size:16px;color:#6a1b9a;font-weight:800;line-height:1.3}
-  .dnb-nav:hover{background:#ede7f6}
-  #desk-date{font-size:13px;font-weight:800;color:#4a148c;white-space:nowrap}
-  #desk-today{background:#7b1fa2;color:#fff;border:none;border-radius:6px;padding:2px 10px;font-size:11px;font-weight:700;cursor:pointer}
-  /* Section 4: Status — fixed width */
-  .hdr-status{background:#fafafa;border-left:2px solid #f0f0f0;width:120px;flex-direction:column;gap:4px;align-items:flex-start;padding:6px 10px}
-  .sync-pill{display:flex;align-items:center;gap:4px;border-radius:20px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer;border:none;white-space:nowrap;width:100%}
+  /* Status pills — far right, stacked vertically */
+  .hdr-status{display:flex;flex-direction:column;gap:3px;flex-shrink:0;align-items:flex-end}
+  .sync-pill{display:inline-flex;align-items:center;gap:3px;border-radius:12px;padding:2px 7px;font-size:10px;font-weight:700;cursor:pointer;border:none;white-space:nowrap}
   .sync-pill.ok{background:#e8f5e9;color:#2e7d32}
   .sync-pill.ok::before{content:'●';color:#43a047;font-size:7px}
   .sync-pill.err{background:#ffebee;color:#c62828}
   .sync-pill.err::before{content:'●';color:#e53935;font-size:7px}
   .sync-pill.busy{background:#fff8e1;color:#f57f17}
   .sync-pill.busy::before{content:'◌';color:#ff8f00;font-size:7px}
-  .sheet-pill{display:flex;align-items:center;gap:4px;border-radius:20px;padding:3px 8px;font-size:10px;font-weight:700;border:none;cursor:default;white-space:nowrap;width:100%}
+  .sheet-pill{display:inline-flex;align-items:center;gap:3px;border-radius:12px;padding:2px 7px;font-size:10px;font-weight:700;border:none;cursor:default;white-space:nowrap}
   .sheet-pill.ok{background:#e8f5e9;color:#2e7d32}
   .sheet-pill.ok::before{content:'●';color:#43a047;font-size:7px}
   .sheet-pill.err{background:#ffebee;color:#c62828}
   .sheet-pill.err::before{content:'●';color:#e53935;font-size:7px}
   .sheet-pill.busy{background:#fff8e1;color:#f57f17}
   .sheet-pill.busy::before{content:'◌';color:#ff8f00;font-size:7px}
+  /* drag handles — keep but subtle */
+  .hdr-drag{display:none}
   #desk-sync{display:none}
   /* Desktop main split */
   .desk-main{display:flex;flex:1;overflow:hidden}
@@ -269,19 +263,10 @@ create policy "public rw" on planner for all using (true) with check (true);</co
 
 <!-- ========== DESKTOP ========== -->
 <div class="desk-header" id="desk-header">
-  <div class="hdr-sec hdr-title" id="hdr-s1">
-    <span class="desk-h1">Daily Planner</span>
-  </div>
-  <div class="hdr-drag" data-drag="1"></div>
-  <div class="hdr-sec hdr-clocks" id="hdr-s2">
-    <div class="desk-clocks" id="desk-clocks"></div>
-  </div>
-  <div class="hdr-drag" data-drag="2"></div>
-  <div class="hdr-sec hdr-date" id="hdr-s3">
-    <div id="desk-clocks-nav"></div>
-  </div>
-  <div class="hdr-drag" data-drag="3"></div>
-  <div class="hdr-sec hdr-status" id="hdr-s4">
+  <span class="desk-h1">Daily Planner</span>
+  <div id="desk-clocks-nav"></div>
+  <div class="desk-clocks" id="desk-clocks"></div>
+  <div class="hdr-status">
     <button class="sync-pill err" id="cloud-pill" onclick="openSync()">&#9729; Cloud</button>
     <span class="sheet-pill busy" id="sheet-pill">&#9783; Sheet</span>
   </div>
@@ -549,9 +534,9 @@ function renderClocks(){
       const b=mk('div','clock-box');b.innerHTML='<span class="ck-label">'+flag(e.c)+' '+e.n+'</span><span class="ck-time" id="ckd-'+i+'">--:--:--</span><span class="ck-sub">'+tzOff(z)+'</span>';
       b.onclick=()=>{tzSlot=i;openPicker()};dc.appendChild(b);
     });
-    // Nav box goes into section 3
+    // Nav box (date nav pill)
     const navCont=document.getElementById('desk-clocks-nav');
-    if(navCont){navCont.innerHTML='';const nb=mk('div','desk-nav-box');nb.innerHTML='<div class="dnb-top"><button class="dnb-nav" id="d-prev">&#8249;</button><span id="desk-date"></span><button class="dnb-nav" id="d-next">&#8250;</button></div><div style="display:flex;gap:4px;justify-content:center"><button id="desk-today">Today</button></div>';navCont.appendChild(nb);}
+    if(navCont){navCont.innerHTML='';const nb=mk('div','desk-nav-box');nb.innerHTML='<button class="dnb-nav" id="d-prev">&#8249;</button><span id="desk-date"></span><button class="dnb-nav" id="d-next">&#8250;</button><button id="desk-today">Today</button>';navCont.appendChild(nb);}
     document.getElementById('d-prev').onclick=()=>{cur=new Date(cur);cur.setDate(cur.getDate()-1);renderCal()};
     document.getElementById('d-next').onclick=()=>{cur=new Date(cur);cur.setDate(cur.getDate()+1);renderCal()};
     document.getElementById('desk-today').onclick=()=>{cur=new Date();cur.setHours(0,0,0,0);renderCal()};
