@@ -308,7 +308,7 @@ create policy "public rw" on planner for all using (true) with check (true);</co
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
       <span>Cloud</span>
     </button>
-    <button class="hdr-icon-btn busy" id="sheet-pill" title="Google Sheet sync">
+    <button class="hdr-icon-btn busy" id="sheet-pill" onclick="refreshSheetData(true)" title="Click to force-refresh Google Sheet">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
       <span>Sheet</span>
     </button>
@@ -864,85 +864,164 @@ function mountMobCal(){
 setInterval(()=>{if(isToday(cur)){const nl=document.getElementById('now-ln');if(nl){const n=new Date();nl.style.top=((n.getHours()*60+n.getMinutes())/(24*60)*24*ROW_H)+'px';}}},60000);
 
 
-/* ---- GOOGLE SHEET INTEGRATION ----
-   Source: Schedule 2026
-   Auto-places "Another World" 4pm-9pm on Akhil's work days
-   Last synced: June 16 2026
--------------------------------------------------- */
-const SHEET_URL = 'https://docs.google.com/spreadsheets/d/18gydYMTEUxespam-b1nyuiKv6QYD-YULqRu1-AWUaN0/pub?output=csv&gid=0';
-const AKHIL_WORK_DAYS = ['2026-06-02', '2026-06-04', '2026-06-05', '2026-06-09', '2026-06-10', '2026-06-12', '2026-06-13', '2026-06-14', '2026-06-17', '2026-06-19', '2026-06-20', '2026-06-22', '2026-06-25', '2026-06-27', '2026-06-28', '2026-07-01', '2026-07-02', '2026-07-04', '2026-07-05', '2026-07-07', '2026-07-08', '2026-07-10', '2026-07-11', '2026-07-17', '2026-07-19', '2026-07-20', '2026-07-22', '2026-07-23', '2026-07-25', '2026-07-26', '2026-07-28', '2026-07-29', '2026-07-31'];
-const AW_TASK_COLOR = '#7b1fa2'; // deep purple - distinctive for "Another World"
-const AW_TASK_NAME = 'Another World';
-const AW_START_H = 16; // 4pm
-const AW_END_H = 21;   // 9pm
+/* =====================================================
+   GOOGLE SHEET INTEGRATION
+   Sheet: Schedule 2026 (akhil304)
+   - Fetches live CSV every 7 days
+   - Falls back to hardcoded dates if sheet not published
+   - Scans col C & D for "Akhil", places "Another World" 4pm-9pm
+===================================================== */
+const SHEET_ID   = '18gydYMTEUxespam-b1nyuiKv6QYD-YULqRu1-AWUaN0';
+const SHEET_PUB  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?output=csv&gid=0`;
+const SHEET_EXP  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
+const PROXY1     = 'https://api.allorigins.win/raw?url=';
+const PROXY2     = 'https://corsproxy.io/?';
+const AW_COLOR   = '#7b1fa2';
+const AW_NAME    = 'Another World';
+const AW_START   = 16;
+const AW_END     = 21;
+const CACHE_DATES_KEY = 'dp_aw_dates';
+const CACHE_TIME_KEY  = 'dp_aw_fetched';
+const REFRESH_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+// Hardcoded fallback (June+July 2026 from sheet)
+const FALLBACK_DATES = [
+  '2026-06-02','2026-06-04','2026-06-05','2026-06-09','2026-06-10',
+  '2026-06-12','2026-06-13','2026-06-14','2026-06-17','2026-06-19',
+  '2026-06-20','2026-06-22','2026-06-25','2026-06-27','2026-06-28',
+  '2026-07-01','2026-07-02','2026-07-04','2026-07-05','2026-07-07',
+  '2026-07-08','2026-07-10','2026-07-11','2026-07-17','2026-07-19',
+  '2026-07-20','2026-07-22','2026-07-23','2026-07-25','2026-07-26',
+  '2026-07-28','2026-07-29','2026-07-31'
+];
+
+function parseSheetDate(raw) {
+  raw = (raw||'').trim().replace(/[""]/g,'');
+  if (!raw) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const MN = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  // "June 2" / "Jun 2" / "JUNE 2"
+  const m1 = raw.match(/^([A-Za-z]+)\s+(\d{1,2})/);
+  if (m1) {
+    const mi = MN.findIndex(m => m1[1].toLowerCase().startsWith(m));
+    if (mi >= 0) return `2026-${String(mi+1).padStart(2,'0')}-${String(+m1[2]).padStart(2,'0')}`;
+  }
+  // "6/17" or "6/17/26"
+  const m2 = raw.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+  if (m2) {
+    const y = m2[3] ? (+m2[3]<100?2000+ +m2[3]:+m2[3]) : 2026;
+    return `${y}-${String(+m2[1]).padStart(2,'0')}-${String(+m2[2]).padStart(2,'0')}`;
+  }
+  try { const d=new Date(raw+' 2026'); if(!isNaN(d)) return d.toISOString().slice(0,10); } catch(e){}
+  return null;
+}
+
+function parseSheetCSV(csv) {
+  const lines = csv.trim().split('\n');
+  const dates = [];
+  const header = lines[0].toLowerCase();
+  const dataLines = header.includes('date')||header.includes('day') ? lines.slice(1) : lines;
+  dataLines.forEach(line => {
+    // Handle quoted CSV properly
+    const cols = line.match(/(".*?"|[^,]+|(?<=,)(?=,)|^(?=,))/g) || line.split(',');
+    const clean = cols.map(c=>(c||'').replace(/^["\s]+|["\s]+$/g,''));
+    const dateRaw = clean[0] || '';
+    const emp1    = (clean[2]||'').toLowerCase();
+    const emp2    = (clean[3]||'').toLowerCase();
+    if ((emp1.includes('akhil') || emp2.includes('akhil')) && dateRaw) {
+      const d = parseSheetDate(dateRaw);
+      if (d) dates.push(d);
+    }
+  });
+  return [...new Set(dates)].sort();
+}
+
+function getCachedDates() {
+  try {
+    const c = localStorage.getItem(CACHE_DATES_KEY);
+    return c ? JSON.parse(c) : FALLBACK_DATES;
+  } catch(e) { return FALLBACK_DATES; }
+}
 
 function injectAnotherWorld() {
-  // Always clean and re-inject to fix any stale data
-  AKHIL_WORK_DAYS.forEach(dateStr => {
-    if (!S.entries[dateStr]) S.entries[dateStr] = [];
-    // Remove any existing AW entries (stale data from old sessions)
-    S.entries[dateStr] = S.entries[dateStr].filter(
-      e => !(e.label === AW_TASK_NAME && e.startH === AW_START_H)
-    );
-    // Add fresh entry
-    S.entries[dateStr].push({
-      id: S.nextId++,
-      label: AW_TASK_NAME,
-      color: AW_TASK_COLOR,
-      type: 'task',
-      startH: AW_START_H,
-      endH: AW_END_H,
-      srcId: null,
-      fromSheet: true
-    });
+  const dates = getCachedDates();
+  // Wipe all AW entries across ALL dates
+  Object.keys(S.entries).forEach(dk => {
+    S.entries[dk] = (S.entries[dk]||[]).filter(e => e.label !== AW_NAME);
+    if (!S.entries[dk].length) delete S.entries[dk];
   });
-  saveL(S);
-  renderEntries(); // re-render current day's entries
+  // Re-inject fresh
+  let count = 0;
+  dates.forEach(dateStr => {
+    if (!S.entries[dateStr]) S.entries[dateStr] = [];
+    S.entries[dateStr].push({
+      id: S.nextId++, label: AW_NAME, color: AW_COLOR,
+      type: 'task', startH: AW_START, endH: AW_END,
+      srcId: null, fromSheet: true
+    });
+    count++;
+  });
+  // Save locally only (not to cloud — re-injected each session)
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(S));
+  renderEntries();
+  console.log(`[Sheet] Injected "${AW_NAME}" on ${count} dates`);
 }
 
-async function refreshSheetData() {
-  // Try to fetch latest sheet data to pick up any schedule changes
-  try {
-    const r = await fetch(SHEET_URL + '&t=' + Date.now());
-    if (!r.ok) return;
-    const text = await r.text();
-    const lines = text.trim().split('\n').slice(1); // skip header
-    // Parse CSV: Date, Day, Employee1, Employee2, Notes...
-    const newAkhilDates = [];
-    lines.forEach(line => {
-      const cols = line.split(',').map(c => c.replace(/^"|"$/g,'').trim());
-      const dateRaw = cols[0]; // e.g. "June 2"
-      const emp1 = cols[2] || '';
-      const emp2 = cols[3] || '';
-      if ((emp1.includes('Akhil') || emp2.includes('Akhil')) && dateRaw) {
-        try {
-          const d = new Date(dateRaw + ' 2026');
-          if (!isNaN(d)) newAkhilDates.push(d.toISOString().slice(0,10));
-        } catch(e) {}
-      }
-    });
-    if (newAkhilDates.length > 5) {
-      Object.keys(S.entries).forEach(dk => {
-        S.entries[dk] = S.entries[dk].filter(e => !e.fromSheet);
-        if (!S.entries[dk].length) delete S.entries[dk];
-      });
-      newAkhilDates.forEach(dateStr => {
-        if (!S.entries[dateStr]) S.entries[dateStr] = [];
-        if (!S.entries[dateStr].find(e => e.label === AW_TASK_NAME && e.startH === AW_START_H)) {
-          S.entries[dateStr].push({id: S.nextId++, label: AW_TASK_NAME, color: AW_TASK_COLOR, type: 'task', startH: AW_START_H, endH: AW_END_H, srcId: null, fromSheet: true});
-        }
-      });
-      saveL(S);
-      renderEntries();
-      updateSheetPill('ok', 'Sheet ✓');
-      toast('Schedule synced from Google Sheets');
+async function fetchCSVFromURL(url) {
+  const r = await fetch(url, {cache:'no-store', headers:{'Accept':'text/csv,text/plain,*/*'}});
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const text = await r.text();
+  if (text.length < 30) throw new Error('Too short');
+  return text;
+}
+
+async function refreshSheetData(force=false) {
+  const lastFetch = parseInt(localStorage.getItem(CACHE_TIME_KEY)||'0');
+  const age = Date.now() - lastFetch;
+  if (!force && age < REFRESH_MS && localStorage.getItem(CACHE_DATES_KEY)) {
+    const dates = getCachedDates();
+    updateSheetPill('ok', `Sheet ✓ (${dates.length})`);
+    return; // still fresh
+  }
+
+  updateSheetPill('busy', 'Syncing sheet...');
+
+  const attempts = [
+    SHEET_PUB,
+    SHEET_EXP,
+    PROXY1 + encodeURIComponent(SHEET_PUB),
+    PROXY2 + encodeURIComponent(SHEET_PUB),
+  ];
+
+  let csv = null;
+  for (const url of attempts) {
+    try { csv = await fetchCSVFromURL(url); console.log('[Sheet] Fetched via:', url.slice(0,60)); break; }
+    catch(e) { console.warn('[Sheet] Failed:', url.slice(0,60), e.message); }
+  }
+
+  if (csv) {
+    const dates = parseSheetCSV(csv);
+    console.log('[Sheet] Parsed dates:', dates);
+    if (dates.length > 0) {
+      localStorage.setItem(CACHE_DATES_KEY, JSON.stringify(dates));
+      localStorage.setItem(CACHE_TIME_KEY, String(Date.now()));
+      injectAnotherWorld();
+      updateSheetPill('ok', `Sheet ✓ (${dates.length} days)`);
+      toast(`Sheet synced — ${dates.length} Akhil work days loaded`);
+    } else {
+      updateSheetPill('err', 'Sheet: no Akhil rows found');
+      console.warn('[Sheet] CSV fetched but no Akhil dates found. Check column positions. Sample:\n', csv.slice(0,400));
+      // Still inject fallback
+      injectAnotherWorld();
     }
-  } catch(e) {
-    // Silently fail - use cached data
+  } else {
+    // All fetch attempts failed — use cached or fallback
+    updateSheetPill('err', 'Sheet: using cached data');
+    injectAnotherWorld(); // inject whatever we have cached
+    console.warn('[Sheet] All fetch attempts failed. Sheet may need to be published to web.');
+    console.info('[Sheet] To fix: Google Sheets → File → Share → Publish to web → Sheet1 → CSV → Publish');
   }
 }
-
-
 /* =====================================================
    GOOGLE CALENDAR INTEGRATION
    Fetches events via Anthropic API (Claude tool use)
@@ -1063,12 +1142,15 @@ updateCloudPill(cloudEnabled?'busy':'err', cloudEnabled?'Connecting...':'No clou
 updateSheetPill('busy','Checking sheet...');
 // 5. Cloud sync (injectAnotherWorld called inside initCloud after each sync)
 initCloud();
-// 6. Refresh Google Sheet in background
+// 6. Refresh Google Sheet (checks cache, fetches if >7 days old)
 setTimeout(async()=>{
   await refreshSheetData();
-  const sp=document.getElementById('sheet-pill');
-  if(sp&&sp.classList.contains('busy'))updateSheetPill('ok','Sheet (cached)');
-}, 2000);
+}, 1500);
+
+// 7. Schedule weekly re-check
+setInterval(async()=>{
+  await refreshSheetData();
+}, 7*24*60*60*1000);
 </script>
 
 <!-- Daily Notes Panel -->
