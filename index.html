@@ -252,9 +252,58 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f2f5;display:flex
   .notes-save-btn{flex:1;padding:7px 12px;border-radius:20px;border:none;background:#5c6bc0;color:#fff;font-size:12px;font-weight:700;cursor:pointer}
   .notes-save-btn:hover{background:#3949ab}
   .notes-char{font-size:10px;color:#aaa;text-align:right}
+
+/* ── PIN LOCK SCREEN ── */
+#pin-screen{position:fixed;inset:0;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:24px}
+#pin-screen.hidden{display:none}
+.pin-logo{font-size:28px;font-weight:800;color:#fff;letter-spacing:-0.5px}
+.pin-logo span{color:#9fa8da}
+.pin-subtitle{font-size:13px;color:rgba(255,255,255,.5);margin-top:-18px}
+.pin-dots{display:flex;gap:14px;margin:8px 0}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.3);background:transparent;transition:all .2s}
+.pin-dot.filled{background:#9fa8da;border-color:#9fa8da;transform:scale(1.15)}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:220px}
+.pin-key{height:58px;border-radius:14px;border:1.5px solid rgba(255,255,255,.12);background:rgba(255,255,255,.07);color:#fff;font-size:20px;font-weight:600;cursor:pointer;transition:all .15s;backdrop-filter:blur(4px)}
+.pin-key:hover{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.25)}
+.pin-key:active{transform:scale(.94);background:rgba(255,255,255,.2)}
+.pin-key.del{font-size:16px;color:rgba(255,255,255,.6)}
+.pin-key.empty{border:none;background:none;cursor:default}
+.pin-error{color:#ef9a9a;font-size:13px;font-weight:600;min-height:18px;text-align:center}
+.pin-change{color:rgba(255,255,255,.35);font-size:11px;cursor:pointer;text-decoration:underline;margin-top:4px}
+.pin-change:hover{color:rgba(255,255,255,.6)}
+
 </style>
 </head>
 <body>
+
+<!-- PIN LOCK SCREEN -->
+<div id="pin-screen">
+  <div class="pin-logo">Daily <span>Planner</span></div>
+  <div class="pin-subtitle">Enter your PIN to continue</div>
+  <div class="pin-dots" id="pin-dots">
+    <div class="pin-dot" id="pd0"></div>
+    <div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div>
+    <div class="pin-dot" id="pd3"></div>
+  </div>
+  <div class="pin-error" id="pin-error"></div>
+  <div class="pin-pad">
+    <button class="pin-key" onclick="pinKey('1')">1</button>
+    <button class="pin-key" onclick="pinKey('2')">2</button>
+    <button class="pin-key" onclick="pinKey('3')">3</button>
+    <button class="pin-key" onclick="pinKey('4')">4</button>
+    <button class="pin-key" onclick="pinKey('5')">5</button>
+    <button class="pin-key" onclick="pinKey('6')">6</button>
+    <button class="pin-key" onclick="pinKey('7')">7</button>
+    <button class="pin-key" onclick="pinKey('8')">8</button>
+    <button class="pin-key" onclick="pinKey('9')">9</button>
+    <button class="pin-key empty"></button>
+    <button class="pin-key" onclick="pinKey('0')">0</button>
+    <button class="pin-key del" onclick="pinDel()">⌫</button>
+  </div>
+  <div class="pin-change" onclick="pinChange()">Change PIN</div>
+</div>
+
 
 <!-- ========== MODALS (shared) ========== -->
 <div class="modal-bg" id="tz-modal">
@@ -1331,6 +1380,112 @@ updateDates = function() {
     if(ta) { ta.value=(S.notes&&S.notes[dk()])||''; updateNotesChar(); }
   }
 };
+
+</script>
+<script>
+
+/* ── PIN LOCK ── */
+const PIN_KEY = 'dp_pin_hash';
+const SESSION_KEY = 'dp_unlocked';
+const DEFAULT_PIN = '1234';
+
+function hashPin(pin) {
+  // Simple hash — not cryptographic but prevents casual reading
+  let h = 0;
+  for (let i = 0; i < pin.length; i++) {
+    h = Math.imul(31, h) + pin.charCodeAt(i) | 0;
+  }
+  return String(h >>> 0);
+}
+
+function getStoredPin() {
+  return localStorage.getItem(PIN_KEY) || hashPin(DEFAULT_PIN);
+}
+
+let pinEntry = '';
+let pinAttempts = 0;
+let pinLocked = false;
+
+function pinKey(d) {
+  if (pinLocked) return;
+  if (pinEntry.length >= 4) return;
+  pinEntry += d;
+  updatePinDots();
+  if (pinEntry.length === 4) setTimeout(checkPin, 150);
+}
+
+function pinDel() {
+  if (pinEntry.length > 0) {
+    pinEntry = pinEntry.slice(0, -1);
+    updatePinDots();
+  }
+}
+
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById('pd' + i);
+    if (dot) dot.classList.toggle('filled', i < pinEntry.length);
+  }
+}
+
+function checkPin() {
+  if (hashPin(pinEntry) === getStoredPin()) {
+    // Correct — unlock
+    sessionStorage.setItem(SESSION_KEY, '1');
+    document.getElementById('pin-screen').classList.add('hidden');
+    document.getElementById('pin-error').textContent = '';
+    pinAttempts = 0;
+    pinEntry = '';
+    updatePinDots();
+  } else {
+    pinAttempts++;
+    pinEntry = '';
+    updatePinDots();
+    document.getElementById('pin-error').textContent =
+      pinAttempts >= 5 ? 'Too many attempts. Wait 30s.' : 'Incorrect PIN';
+    // Shake effect
+    const dots = document.getElementById('pin-dots');
+    dots.style.animation = 'none';
+    dots.offsetHeight;
+    dots.style.animation = 'shake .4s ease';
+    if (pinAttempts >= 5) {
+      pinLocked = true;
+      setTimeout(() => { pinLocked = false; pinAttempts = 0;
+        document.getElementById('pin-error').textContent = ''; }, 30000);
+    }
+  }
+}
+
+function pinChange() {
+  const current = prompt('Enter current PIN:');
+  if (!current) return;
+  if (hashPin(current) !== getStoredPin()) { alert('Incorrect PIN'); return; }
+  const newPin = prompt('Enter new 4-digit PIN:');
+  if (!newPin || !/^\d{4}$/.test(newPin)) { alert('PIN must be exactly 4 digits'); return; }
+  const confirm = prompt('Confirm new PIN:');
+  if (newPin !== confirm) { alert('PINs do not match'); return; }
+  localStorage.setItem(PIN_KEY, hashPin(newPin));
+  alert('PIN changed successfully!');
+}
+
+// Keyboard support
+document.addEventListener('keydown', e => {
+  const screen = document.getElementById('pin-screen');
+  if (screen && !screen.classList.contains('hidden')) {
+    if (e.key >= '0' && e.key <= '9') pinKey(e.key);
+    if (e.key === 'Backspace') pinDel();
+  }
+});
+
+// Add shake keyframe
+const shakeStyle = document.createElement('style');
+shakeStyle.textContent = '@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}';
+document.head.appendChild(shakeStyle);
+
+// Check session on load — if already unlocked this session, skip PIN
+if (sessionStorage.getItem(SESSION_KEY) === '1') {
+  document.getElementById('pin-screen').classList.add('hidden');
+}
 
 </script>
 </body>
