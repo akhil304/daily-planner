@@ -26,8 +26,11 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f2f5;display:flex
 .cal-grid{position:relative}
 .hour-row{display:flex;border-bottom:1px solid #e8eaed;height:60px;position:relative;background:#fff}
 .hour-row:hover .hour-cell{background:rgba(92,107,192,.03)}
-.hour-label{width:56px;flex-shrink:0;font-size:11px;font-weight:600;padding:0 8px 0 0;text-align:right;user-select:none;color:#70757a;line-height:1;position:relative;top:-8px}
-.hour-label .h12{display:block;font-size:11px;font-weight:500}
+.hour-row{height:30px!important}
+.hour-row.half-row{border-bottom:1px dashed #ebebeb!important;background:#fcfcff!important}
+.hour-label{width:56px;flex-shrink:0;padding:0 8px 0 0;text-align:right;user-select:none;line-height:1;position:relative;top:-7px}
+.hour-label .h12{display:block;font-size:11px;font-weight:600;color:#70757a}
+.hour-label .h30{display:block;font-size:9px;font-weight:400;color:#b0b8c4}
 .hour-label .h24{display:none}
 .hour-cell{flex:1;position:relative}
 .hour-cell.drag-over{background:rgba(92,107,192,.15)!important;outline:2px dashed #5c6bc0;outline-offset:-2px}
@@ -734,6 +737,8 @@ document.getElementById('mob-next').onclick=()=>{cur=new Date(cur);cur.setDate(c
 function mk(tag,cls){const el=document.createElement(tag);if(cls)el.className=cls;return el;}
 function fmtH(h){return h.toString().padStart(2,'0')+':00'}
 function fmtHM(h,m){return h.toString().padStart(2,'0')+':'+(m||0).toString().padStart(2,'0')}
+function fmtHM2(h,m){return String(h).padStart(2,'0')+':'+String(m||0).padStart(2,'0')}
+function decToHM(dec){const h=Math.floor(dec),m=Math.round((dec-h)*60);return fmtHM(h,m);}
 function isToday(d){const t=new Date();return d.getFullYear()===t.getFullYear()&&d.getMonth()===t.getMonth()&&d.getDate()===t.getDate()}
 function dk(){return cur.toISOString().slice(0,10)}
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.style.display='block';clearTimeout(toast._t);toast._t=setTimeout(()=>el.style.display='none',3000)}
@@ -753,12 +758,23 @@ function renderCal(){
   Array.from(grid.querySelectorAll('.hour-row')).forEach(r=>r.remove());
   const ed=document.getElementById('cal-entries');
   const now=new Date();
-  // Build 0→23 (Google Calendar style: midnight at top, 11pm at bottom)
-  for(let h=0;h<24;h++){
-    const row=mk('div','hour-row');row.dataset.h=h;
+  // Build 48 half-hour rows: 0:00, 0:30, 1:00 ... 23:30
+  for(let slot=0;slot<48;slot++){
+    const h   = Math.floor(slot/2);
+    const min = slot%2===0 ? 0 : 30;
+    const isHour = min===0;
+    const row=mk('div', isHour?'hour-row':'hour-row half-row');
+    row.dataset.slot=slot; row.dataset.h=h; row.dataset.m=min;
+    // Label: show on hour rows only (or :30 in smaller text)
     const lbl=mk('div','hour-label');
-    // Show time on left: 12am, 1am ... 12pm, 1pm ... 11pm; hide midnight label
-    lbl.innerHTML=h===0?'':'<span class="h12">'+(h<12?h+'am':h===12?'12pm':(h-12)+'pm')+'</span>';
+    if(slot===0){
+      lbl.innerHTML=''; // hide midnight
+    } else if(isHour){
+      const h12=h<12?(h+'am'):h===12?'12pm':((h-12)+'pm');
+      lbl.innerHTML=`<span class="h12">${h12}</span>`;
+    } else {
+      lbl.innerHTML=`<span class="h30">${String(h).padStart(2,'0')}:30</span>`;
+    }
     const cell=mk('div','hour-cell');
     cell.addEventListener('dragover',e=>{e.preventDefault();cell.classList.add('drag-over')});
     cell.addEventListener('dragleave',()=>cell.classList.remove('drag-over'));
@@ -767,11 +783,13 @@ function renderCal(){
       if(!dragItem)return;
       const d=dk();if(!S.entries[d])S.entries[d]=[];
       let label='',color='#5c6bc0',type=dragItem.type,srcId=dragItem.id;
+      // Snap to nearest half-hour: store as decimal (e.g. 9.5 = 9:30)
+      const slotH = h + (min===30?0.5:0);
       if(type==='task'){const t=S.tasks.find(x=>x.id===srcId);if(!t)return;label=t.name;color=t.color;}
       else{const r=S.reminders.find(x=>x.id===srcId);if(!r)return;label=r.name;color=r.color||'#455a64';
-        const nt=fmtH(h);if(r.time!==nt){r.time=nt;Object.keys(S.entries).forEach(dd=>{S.entries[dd]=(S.entries[dd]||[]).filter(e=>e.autoId!==srcId);if(!S.entries[dd].length)delete S.entries[dd];});save();renderLists();}
+        const nt=fmtHM2(h,min);if(r.time!==nt){r.time=nt;Object.keys(S.entries).forEach(dd=>{S.entries[dd]=(S.entries[dd]||[]).filter(e=>e.autoId!==srcId);if(!S.entries[dd].length)delete S.entries[dd];});save();renderLists();}
       }
-      S.entries[d].push({id:S.nextId++,label,color,type,startH:h,endH:h+1,srcId});
+      S.entries[d].push({id:S.nextId++,label,color,type,startH:slotH,endH:slotH+0.5,srcId});
       save();renderEntries();
     });
     row.appendChild(lbl);row.appendChild(cell);
@@ -780,13 +798,13 @@ function renderCal(){
   const onl=document.getElementById('now-ln');if(onl)onl.remove();
   if(isToday(cur)){
     const pct=(now.getHours()*60+now.getMinutes())/(24*60);
-    const nl=mk('div','now-line');nl.id='now-ln';nl.style.top=(pct*24*ROW_H)+'px';
+    const nl=mk('div','now-line');nl.id='now-ln';nl.style.top=(pct*48*ROW_H)+'px';
     grid.appendChild(nl);
   }
   autoPlace(dk());renderEntries();
-  // Scroll to 7am (or current hour - 1) — Google Calendar default view starts at 7am
+  // Scroll to 7am default
   const scrollHour=isToday(cur)?Math.max(6,now.getHours()-1):7;
-  document.getElementById('cal-panel').scrollTop=scrollHour*ROW_H;
+  document.getElementById('cal-panel').scrollTop=scrollHour*2*ROW_H;
   // Auto-sync GCal for this date (debounced)
   clearTimeout(renderCal._gcalt);
   renderCal._gcalt=setTimeout(()=>syncGCal(dk()),500);
@@ -795,20 +813,35 @@ function renderCal(){
 function autoPlace(d){
   S.reminders.forEach(r=>{
     if(!r.time)return;const m=r.time.match(/^(\d{1,2}):(\d{2})$/);if(!m)return;
-    const h=parseInt(m[1]);if(h<0||h>23)return;
+    const h=parseInt(m[1]),mn=parseInt(m[2]);
+    if(h<0||h>23)return;
+    const startH=h+(mn>=30?0.5:0);
     if(!S.entries[d])S.entries[d]=[];
-    if(!S.entries[d].find(e=>e.autoId===r.id)){S.entries[d].push({id:S.nextId++,label:r.name,color:r.color||'#455a64',type:'rem',startH:h,endH:h+1,autoId:r.id});save();}
+    if(!S.entries[d].find(e=>e.autoId===r.id)){
+      S.entries[d].push({id:S.nextId++,label:r.name,color:r.color||'#455a64',type:'rem',startH,endH:startH+0.5,autoId:r.id});
+      save();
+    }
   });
 }
 
 function renderEntries(){
   const d=dk();const ct=document.getElementById('cal-entries');ct.innerHTML='';
   const entries=(S.entries[d]||[]).slice().sort((a,b)=>a.startH-b.startH);
-  const cols=Array.from({length:24},()=>[]);
-  entries.forEach(e=>{let c=0;lp:for(;;){for(let h=e.startH;h<Math.min(e.endH,24);h++){if((cols[h]||[]).includes(c)){c++;continue lp;}}break;}for(let h=e.startH;h<Math.min(e.endH,24);h++){if(!cols[h])cols[h]=[];cols[h].push(c);}e._c=c;});
+  const cols=Array.from({length:48},()=>[]);
+  entries.forEach(e=>{
+    let c=0;
+    // Convert decimal hours to slot indices (9.5 → slot 19)
+    const s0=Math.round(e.startH*2), s1=Math.min(48,Math.round(e.endH*2));
+    lp:for(;;){for(let s=s0;s<s1;s++){if((cols[s]||[]).includes(c)){c++;continue lp;}}break;}
+    for(let s=s0;s<s1;s++){if(!cols[s])cols[s]=[];cols[s].push(c);}
+    e._c=c;
+  });
   const mc=3;
   entries.forEach(e=>{
-    const c=e._c||0,top=e.startH*ROW_H+2,ht=Math.max(18,(e.endH-e.startH)*ROW_H-4);
+    const c=e._c||0;
+    // Each hour = 2 slots × ROW_H px. startH/endH can be decimal (9.5 = 9:30)
+    const top  = e.startH*2*ROW_H + 2;
+    const ht   = Math.max(16, (e.endH-e.startH)*2*ROW_H - 4);
     const el=mk('div','cal-entry '+(e.type==='task'?'task-entry':'rem-entry'));
     el.style.cssText='top:'+top+'px;left:calc('+c+'*100%/'+mc+');width:calc(100%/'+mc+' - 3px);height:'+ht+'px;';
     if(e.type==='task')el.style.background=e.color;else el.style.borderLeftColor=e.color;
