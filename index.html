@@ -1311,8 +1311,13 @@ function preloadGCalEvents(events) {
   events.forEach(ev => {
     if (ev.allDay) return;
     const start = icsToDate(ev.dtstart);
-    if (!start || start < new Date(now.toDateString()) || start > cutoff) return;
-    const d = start.toLocaleDateString('sv'); // YYYY-MM-DD
+    if (!start) return;
+    // Use LOCAL date string for correct timezone day assignment
+    const d = start.getFullYear() + '-' +
+              String(start.getMonth()+1).padStart(2,'0') + '-' +
+              String(start.getDate()).padStart(2,'0');
+    const startOfToday = new Date(); startOfToday.setHours(0,0,0,0);
+    if (start < startOfToday || start > cutoff) return;
     if (!byDate[d]) byDate[d] = [];
     byDate[d].push(ev);
   });
@@ -1326,16 +1331,19 @@ function preloadGCalEvents(events) {
     evs.forEach(ev => {
       const start  = icsToDate(ev.dtstart);
       const end    = icsToDate(ev.dtend);
-      const startH = start.getHours() + (start.getMinutes() >= 30 ? 0.5 : 0);
-      const endH   = end ? end.getHours() + end.getMinutes()/60 : startH + 1;
-      const roundedEnd = Math.ceil(endH * 2) / 2;
+      // getHours() returns LOCAL hours — correct for positioning
+      const sh = start.getHours() + (start.getMinutes() >= 30 ? 0.5 : 0);
+      const eh = end ? (end.getHours() + Math.round(end.getMinutes()/60*2)/2) : sh + 1;
+      // Clamp to 0-24 range
+      const startH = Math.max(0, Math.min(23.5, sh));
+      const endH   = Math.max(startH + 0.5, Math.min(24, eh));
       S.entries[dateStr].push({
         id: S.nextId++,
         label: ev.summary,
         color: GCAL_COLOR,
         type: 'task',
         startH,
-        endH: Math.max(startH + 0.5, Math.min(24, roundedEnd)),
+        endH,
         srcId: null,
         fromGCal: true
       });
@@ -1621,6 +1629,35 @@ function getStoredPin() {
   return localStorage.getItem(PIN_KEY) || hashPin(DEFAULT_PIN);
 }
 
+// Sync PIN hash to/from Supabase so it works on all devices
+async function pushPinToCloud(hash) {
+  if (!cloudEnabled) return;
+  try {
+    await fetch(SB_URL+'/rest/v1/planner', {
+      method: 'POST',
+      headers: {...sbH(), 'Prefer':'resolution=merge-duplicates,return=minimal'},
+      body: JSON.stringify({key:'planner_pin', value:hash, updated_at:new Date().toISOString()})
+    });
+  } catch(e) { console.warn('[PIN] Cloud push failed:', e); }
+}
+
+async function pullPinFromCloud() {
+  if (!cloudEnabled) return;
+  try {
+    const r = await fetch(SB_URL+'/rest/v1/planner?key=eq.planner_pin&select=value', {headers:sbH()});
+    if (!r.ok) return;
+    const rows = await r.json();
+    if (rows && rows.length && rows[0].value) {
+      const cloudHash = rows[0].value;
+      const localHash = localStorage.getItem(PIN_KEY);
+      if (cloudHash !== localHash) {
+        localStorage.setItem(PIN_KEY, cloudHash);
+        console.log('[PIN] Synced PIN from cloud');
+      }
+    }
+  } catch(e) { console.warn('[PIN] Cloud pull failed:', e); }
+}
+
 let pinEntry = '';
 let pinAttempts = 0;
 let pinLocked = false;
@@ -1683,8 +1720,10 @@ function pinChange() {
   if (!newPin || !/^\d{4}$/.test(newPin)) { alert('PIN must be exactly 4 digits'); return; }
   const confirm = prompt('Confirm new PIN:');
   if (newPin !== confirm) { alert('PINs do not match'); return; }
-  localStorage.setItem(PIN_KEY, hashPin(newPin));
-  alert('PIN changed successfully!');
+  const newHash = hashPin(newPin);
+  localStorage.setItem(PIN_KEY, newHash);
+  pushPinToCloud(newHash);
+  alert('PIN changed and synced to all devices!');
 }
 
 // Keyboard support
@@ -1701,10 +1740,13 @@ const shakeStyle = document.createElement('style');
 shakeStyle.textContent = '@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}';
 document.head.appendChild(shakeStyle);
 
-// Check session on load — if already unlocked this session, skip PIN
-if (sessionStorage.getItem(SESSION_KEY) === '1') {
-  document.getElementById('pin-screen').classList.add('hidden');
-}
+// Pull PIN from cloud first, then check session
+(async () => {
+  await pullPinFromCloud();
+  if (sessionStorage.getItem(SESSION_KEY) === '1') {
+    document.getElementById('pin-screen').classList.add('hidden');
+  }
+})();
 
 </script>
 </body>
