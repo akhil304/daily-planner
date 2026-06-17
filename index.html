@@ -35,7 +35,10 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f2f5;display:flex
 .cal-entry{position:absolute;border-radius:7px;pointer-events:all;display:flex;flex-direction:column;overflow:hidden;transition:box-shadow .12s}
 .cal-entry:hover{box-shadow:0 3px 14px rgba(0,0,0,.22);z-index:20}
 /* Tasks: solid vivid fill */
-.cal-entry.task-entry{border:none;border-left:4px solid rgba(0,0,0,.2)}
+.cal-entry.task-entry{border:none;border-left:4px solid rgba(0,0,0,.15);border-radius:6px}
+/* Google Calendar events: rounded, semi-transparent, Google style */
+.cal-entry.task-entry[data-gcal="1"]{border-left:none;border-radius:4px;opacity:.92}
+.cal-entry.task-entry[data-gcal="1"] .entry-name{font-size:12px;font-weight:500}
 /* Reminders: white bg + thick coloured left border + diagonal stripe */
 .cal-entry.rem-entry{background:repeating-linear-gradient(135deg,#fff,#fff 8px,#f8f8ff 8px,#f8f8ff 16px);border-left:5px solid;box-shadow:0 1px 5px rgba(0,0,0,.1)}
 .entry-body{flex:1;padding:4px 18px 4px 8px;display:flex;flex-direction:column;justify-content:center;overflow:hidden;min-height:0}
@@ -265,6 +268,7 @@ create policy "public rw" on planner for all using (true) with check (true);</co
   <div class="hdr-status">
     <button class="sync-pill err" id="cloud-pill" onclick="openSync()">&#9729; Cloud</button>
     <span class="sheet-pill busy" id="sheet-pill">&#9783; Sheet</span>
+    <button class="sheet-pill busy" id="gcal-pill" onclick="syncGCal(dk())" title="Sync Google Calendar">&#128197; GCal</button>
   </div>
 </div>
 <div class="desk-main">
@@ -639,6 +643,9 @@ function renderCal(){
   // Scroll to 7am (or current hour - 1) — Google Calendar default view starts at 7am
   const scrollHour=isToday(cur)?Math.max(6,now.getHours()-1):7;
   document.getElementById('cal-panel').scrollTop=scrollHour*ROW_H;
+  // Auto-sync GCal for this date (debounced)
+  clearTimeout(renderCal._gcalt);
+  renderCal._gcalt=setTimeout(()=>syncGCal(dk()),500);
 }
 
 function autoPlace(d){
@@ -661,6 +668,7 @@ function renderEntries(){
     const el=mk('div','cal-entry '+(e.type==='task'?'task-entry':'rem-entry'));
     el.style.cssText='top:'+top+'px;left:calc('+c+'*100%/'+mc+');width:calc(100%/'+mc+' - 3px);height:'+ht+'px;';
     if(e.type==='task')el.style.background=e.color;else el.style.borderLeftColor=e.color;
+    if(e.fromGCal)el.dataset.gcal='1';
     const body=mk('div','entry-body');
     const nm=mk('input','entry-name');nm.value=e.label;
     nm.addEventListener('mousedown',ev=>ev.stopPropagation());
@@ -846,6 +854,114 @@ async function refreshSheetData() {
     // Silently fail - use cached data
   }
 }
+
+
+/* =====================================================
+   GOOGLE CALENDAR INTEGRATION
+   Fetches events via Anthropic API (Claude tool use)
+   and displays them on the daily planner calendar
+===================================================== */
+const GCAL_COLOR = '#039be5'; // Google Calendar blue
+const GCAL_REM_COLOR = '#0b8043'; // green for all-day
+
+async function fetchGCalEvents(dateStr) {
+  // dateStr = "YYYY-MM-DD"
+  const startISO = dateStr + 'T00:00:00';
+  const endISO   = dateStr + 'T23:59:59';
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        tools: [],
+        mcp_servers: [{ type: 'url', url: 'https://calendarmcp.googleapis.com/mcp/v1', name: 'gcal' }],
+        messages: [{
+          role: 'user',
+          content: `List all Google Calendar events for ${dateStr} from ${startISO} to ${endISO}. Return ONLY a JSON array, no other text. Each item: {"summary":"title","start":"ISO datetime","end":"ISO datetime","color":"optional hex","allDay":bool}. If no events return [].`
+        }]
+      })
+    });
+
+    if (!resp.ok) throw new Error('API ' + resp.status);
+    const data = await resp.json();
+
+    // Extract text response
+    const text = data.content
+      .filter(b => b.type === 'text')
+      .map(b => b.text)
+      .join('');
+
+    // Parse JSON array from response
+    const match = text.match(/\[.*\]/s);
+    if (!match) return [];
+    return JSON.parse(match[0]);
+
+  } catch(e) {
+    console.warn('GCal fetch error:', e);
+    updateGCalPill('err', 'GCal Error');
+    return [];
+  }
+}
+
+function updateGCalPill(state, label) {
+  const p = document.getElementById('gcal-pill');
+  if (!p) return;
+  p.className = 'sheet-pill ' + state;
+  p.innerHTML = '&#128197; ' + (label || 'GCal');
+}
+
+function injectGCalEvents(dateStr, events) {
+  if (!S.entries[dateStr]) S.entries[dateStr] = [];
+
+  // Remove old gcal events for this date
+  S.entries[dateStr] = S.entries[dateStr].filter(e => !e.fromGCal);
+
+  events.forEach(ev => {
+    if (ev.allDay) return; // skip all-day for now
+    const start = new Date(ev.start);
+    const end   = new Date(ev.end);
+    const startH = start.getHours() + (start.getMinutes() >= 30 ? 0.5 : 0);
+    const endH   = Math.ceil(end.getHours() + end.getMinutes() / 60);
+
+    if (startH < 0 || startH > 23) return;
+
+    S.entries[dateStr].push({
+      id: S.nextId++,
+      label: ev.summary || 'GCal Event',
+      color: ev.color || GCAL_COLOR,
+      type: 'task',
+      startH: Math.floor(startH),
+      endH: Math.max(Math.floor(startH) + 1, Math.min(24, endH)),
+      srcId: null,
+      fromGCal: true,
+      gcalLink: ev.htmlLink || null
+    });
+  });
+
+  saveL(S);
+  renderEntries();
+}
+
+let gcalFetching = false;
+async function syncGCal(dateStr) {
+  if (gcalFetching) return;
+  gcalFetching = true;
+  updateGCalPill('busy', 'Loading...');
+
+  const events = await fetchGCalEvents(dateStr);
+  injectGCalEvents(dateStr, events);
+
+  if (events.length > 0) {
+    updateGCalPill('ok', 'GCal (' + events.length + ')');
+  } else {
+    updateGCalPill('ok', 'GCal ✓');
+  }
+  gcalFetching = false;
+}
+
 
 function renderAll(){renderClocks();renderCal();renderLists();}
 renderAll();
