@@ -24,18 +24,14 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f2f5;display:flex
 /* Calendar */
 .cal-panel{overflow-y:auto;background:#fff;position:relative;-webkit-overflow-scrolling:touch}
 .cal-grid{position:relative}
-.hour-row{display:flex;border-bottom:1px solid #f0f0f0;height:60px;position:relative}
-.hour-row:nth-child(odd){background:#fafbff}
-.hour-row:nth-child(even){background:#f7f8fd}
-.hour-label{width:52px;flex-shrink:0;font-size:10px;font-weight:700;padding:4px 6px 0;text-align:right;user-select:none;border-right:3px solid transparent;line-height:1.3}
-.hour-label.am{color:#5c6bc0;border-right-color:#c5cae9}
-.hour-label.pm{color:#43a047;border-right-color:#a5d6a7}
-.hour-label.night{color:#7986cb;border-right-color:#9fa8da}
-.hour-label .h12{font-size:11px;font-weight:800;display:block}
-.hour-label .h24{font-size:9px;opacity:.5;display:block}
+.hour-row{display:flex;border-bottom:1px solid #e8eaed;height:60px;position:relative;background:#fff}
+.hour-row:hover .hour-cell{background:rgba(92,107,192,.03)}
+.hour-label{width:56px;flex-shrink:0;font-size:11px;font-weight:600;padding:0 8px 0 0;text-align:right;user-select:none;color:#70757a;line-height:1;position:relative;top:-8px}
+.hour-label .h12{display:block;font-size:11px;font-weight:500}
+.hour-label .h24{display:none}
 .hour-cell{flex:1;position:relative}
 .hour-cell.drag-over{background:rgba(92,107,192,.15)!important;outline:2px dashed #5c6bc0;outline-offset:-2px}
-.cal-entries{position:absolute;top:0;left:52px;right:0;pointer-events:none}
+.cal-entries{position:absolute;top:0;left:56px;right:0;pointer-events:none}
 .cal-entry{position:absolute;border-radius:7px;pointer-events:all;display:flex;flex-direction:column;overflow:hidden;transition:box-shadow .12s}
 .cal-entry:hover{box-shadow:0 3px 14px rgba(0,0,0,.22);z-index:20}
 /* Tasks: solid vivid fill */
@@ -609,10 +605,12 @@ function renderCal(){
   Array.from(grid.querySelectorAll('.hour-row')).forEach(r=>r.remove());
   const ed=document.getElementById('cal-entries');
   const now=new Date();
-  for(let h=23;h>=0;h--){
+  // Build 0→23 (Google Calendar style: midnight at top, 11pm at bottom)
+  for(let h=0;h<24;h++){
     const row=mk('div','hour-row');row.dataset.h=h;
-    const lbl=mk('div','hour-label '+hClass(h));
-    lbl.innerHTML='<span class="h12">'+(h===0?'12am':h<12?h+'am':h===12?'12pm':(h-12)+'pm')+'</span><span class="h24">'+fmtH(h)+'</span>';
+    const lbl=mk('div','hour-label');
+    // Show time on left: 12am, 1am ... 12pm, 1pm ... 11pm; hide midnight label
+    lbl.innerHTML=h===0?'':'<span class="h12">'+(h<12?h+'am':h===12?'12pm':(h-12)+'pm')+'</span>';
     const cell=mk('div','hour-cell');
     cell.addEventListener('dragover',e=>{e.preventDefault();cell.classList.add('drag-over')});
     cell.addEventListener('dragleave',()=>cell.classList.remove('drag-over'));
@@ -628,12 +626,19 @@ function renderCal(){
       S.entries[d].push({id:S.nextId++,label,color,type,startH:h,endH:h+1,srcId});
       save();renderEntries();
     });
-    row.appendChild(lbl);row.appendChild(cell);grid.insertBefore(row,ed);
+    row.appendChild(lbl);row.appendChild(cell);
+    grid.insertBefore(row,ed);
   }
   const onl=document.getElementById('now-ln');if(onl)onl.remove();
-  if(isToday(cur)){const nl=mk('div','now-line');nl.id='now-ln';nl.style.top=((now.getHours()*60+now.getMinutes())/(24*60)*24*ROW_H)+'px';grid.appendChild(nl);}
+  if(isToday(cur)){
+    const pct=(now.getHours()*60+now.getMinutes())/(24*60);
+    const nl=mk('div','now-line');nl.id='now-ln';nl.style.top=(pct*24*ROW_H)+'px';
+    grid.appendChild(nl);
+  }
   autoPlace(dk());renderEntries();
-  document.getElementById('cal-panel').scrollTop=(isToday(cur)?Math.max(0,now.getHours()-1):7)*ROW_H;
+  // Scroll to 7am (or current hour - 1) — Google Calendar default view starts at 7am
+  const scrollHour=isToday(cur)?Math.max(6,now.getHours()-1):7;
+  document.getElementById('cal-panel').scrollTop=scrollHour*ROW_H;
 }
 
 function autoPlace(d){
