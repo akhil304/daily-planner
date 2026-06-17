@@ -502,6 +502,11 @@ function migr(d){
   d.clocks=d.clocks.slice(0,2);
   while(d.clocks.length<2)d.clocks.push('Europe/London');
   if(!d.nextId)d.nextId=1;
+  // Clean stale "Another World" entries so injectAnotherWorld() re-adds them cleanly
+  Object.keys(d.entries||{}).forEach(dk=>{
+    d.entries[dk]=(d.entries[dk]||[]).filter(e=>e.label!=='Another World');
+    if(!d.entries[dk].length)delete d.entries[dk];
+  });
   return d;
 }
 function loadL(){try{const p=new URLSearchParams(location.search).get('d');if(p){const d=migr(JSON.parse(atob(p)));history.replaceState(null,'',location.pathname);saveL(d);return d;}for(const k of[LOCAL_KEY,'dp_v5','dp_v4','dp_v3','dp_v2','dp_v1','dpState2','dpState']){const s=localStorage.getItem(k);if(s)return migr(JSON.parse(s));}}catch(e){}return blank();}
@@ -786,31 +791,33 @@ setInterval(()=>{if(isToday(cur)){const nl=document.getElementById('now-ln');if(
 -------------------------------------------------- */
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/18gydYMTEUxespam-b1nyuiKv6QYD-YULqRu1-AWUaN0/pub?output=csv&gid=0';
 const AKHIL_WORK_DAYS = ['2026-06-02', '2026-06-04', '2026-06-05', '2026-06-09', '2026-06-10', '2026-06-12', '2026-06-13', '2026-06-14', '2026-06-17', '2026-06-19', '2026-06-20', '2026-06-22', '2026-06-25', '2026-06-27', '2026-06-28', '2026-07-01', '2026-07-02', '2026-07-04', '2026-07-05', '2026-07-07', '2026-07-08', '2026-07-10', '2026-07-11', '2026-07-17', '2026-07-19', '2026-07-20', '2026-07-22', '2026-07-23', '2026-07-25', '2026-07-26', '2026-07-28', '2026-07-29', '2026-07-31'];
-const AW_TASK_COLOR = '#7b1fa2'; // purple - distinctive for "Another World"
+const AW_TASK_COLOR = '#7b1fa2'; // deep purple - distinctive for "Another World"
 const AW_TASK_NAME = 'Another World';
 const AW_START_H = 16; // 4pm
 const AW_END_H = 21;   // 9pm
 
 function injectAnotherWorld() {
+  // Always clean and re-inject to fix any stale data
   AKHIL_WORK_DAYS.forEach(dateStr => {
     if (!S.entries[dateStr]) S.entries[dateStr] = [];
-    // Check not already added
-    const already = S.entries[dateStr].find(e => e.label === AW_TASK_NAME && e.startH === AW_START_H);
-    if (!already) {
-      S.entries[dateStr].push({
-        id: S.nextId++,
-        label: AW_TASK_NAME,
-        color: AW_TASK_COLOR,
-        type: 'task',
-        startH: AW_START_H,
-        endH: AW_END_H,
-        srcId: null,
-        fromSheet: true  // mark so we can refresh without duplicates
-      });
-    }
+    // Remove any existing AW entries (stale data from old sessions)
+    S.entries[dateStr] = S.entries[dateStr].filter(
+      e => !(e.label === AW_TASK_NAME && e.startH === AW_START_H)
+    );
+    // Add fresh entry
+    S.entries[dateStr].push({
+      id: S.nextId++,
+      label: AW_TASK_NAME,
+      color: AW_TASK_COLOR,
+      type: 'task',
+      startH: AW_START_H,
+      endH: AW_END_H,
+      srcId: null,
+      fromSheet: true
+    });
   });
   saveL(S);
-  renderEntries();
+  renderEntries(); // re-render current day's entries
 }
 
 async function refreshSheetData() {
