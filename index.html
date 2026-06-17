@@ -419,7 +419,11 @@ function migr(d){
 function loadL(){try{const p=new URLSearchParams(location.search).get('d');if(p){const d=migr(JSON.parse(atob(p)));history.replaceState(null,'',location.pathname);saveL(d);return d;}for(const k of[LOCAL_KEY,'dp_v5','dp_v4','dp_v3','dp_v2','dp_v1','dpState2','dpState']){const s=localStorage.getItem(k);if(s)return migr(JSON.parse(s));}}catch(e){}return blank();}
 function saveL(s){localStorage.setItem(LOCAL_KEY,JSON.stringify(s||S))}
 function save(){saveL(S);schedPush();}
-let S=loadL();loadCreds();
+let S=loadL();
+// Pre-fill Supabase credentials if not already set
+if(!localStorage.getItem('sb_url')){localStorage.setItem('sb_url','https://elddwzfqftamestmtqnn.supabase.co');}
+if(!localStorage.getItem('sb_key')){localStorage.setItem('sb_key','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVsZGR3emZxZnRhbWVzdG10cW5uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1ODc5NjIsImV4cCI6MjA5NzE2Mzk2Mn0.yTmPAudjy2-o_Tb90PaUZktXTrhj_5UTMPwj8wiV1r4');}
+loadCreds();
 
 /* ---- MODALS ---- */
 document.getElementById('setup-skip').onclick=()=>document.getElementById('setup-modal').classList.remove('open');
