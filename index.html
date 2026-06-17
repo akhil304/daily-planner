@@ -802,12 +802,14 @@ function renderCal(){
     grid.appendChild(nl);
   }
   autoPlace(dk());renderEntries();
+  // If GCal events already parsed, inject for this date instantly
+  if(gcalEvents){injectGCalForDate(gcalEvents,dk());}
   // Scroll to 7am default
   const scrollHour=isToday(cur)?Math.max(6,now.getHours()-1):7;
   document.getElementById('cal-panel').scrollTop=scrollHour*2*ROW_H;
-  // Auto-sync GCal for this date (debounced)
+  // Sync GCal (uses cache if fresh)
   clearTimeout(renderCal._gcalt);
-  renderCal._gcalt=setTimeout(()=>syncGCal(dk()),500);
+  renderCal._gcalt=setTimeout(()=>syncGCal(dk(),false),600);
 }
 
 function autoPlace(d){
@@ -1172,107 +1174,146 @@ async function refreshSheetData(force=false) {
   }
 }
 /* =====================================================
-   GOOGLE CALENDAR INTEGRATION
-   Fetches events via Anthropic API (Claude tool use)
-   and displays them on the daily planner calendar
+   GOOGLE CALENDAR INTEGRATION — iCal/ICS feed
+   Public ICS: akhil304@gmail.com
+   Parses VEVENT blocks, shows events as cyan blocks
+   Refreshes every 30 min, caches in localStorage
 ===================================================== */
-const GCAL_COLOR = '#039be5'; // Google Calendar blue
-const GCAL_REM_COLOR = '#0b8043'; // green for all-day
-
-async function fetchGCalEvents(dateStr) {
-  // dateStr = "YYYY-MM-DD"
-  const startISO = dateStr + 'T00:00:00';
-  const endISO   = dateStr + 'T23:59:59';
-
-  try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
-        tools: [],
-        mcp_servers: [{ type: 'url', url: 'https://calendarmcp.googleapis.com/mcp/v1', name: 'gcal' }],
-        messages: [{
-          role: 'user',
-          content: `List all Google Calendar events for ${dateStr} from ${startISO} to ${endISO}. Return ONLY a JSON array, no other text. Each item: {"summary":"title","start":"ISO datetime","end":"ISO datetime","color":"optional hex","allDay":bool}. If no events return [].`
-        }]
-      })
-    });
-
-    if (!resp.ok) throw new Error('API ' + resp.status);
-    const data = await resp.json();
-
-    // Extract text response
-    const text = data.content
-      .filter(b => b.type === 'text')
-      .map(b => b.text)
-      .join('');
-
-    // Parse JSON array from response
-    const match = text.match(/\[.*\]/s);
-    if (!match) return [];
-    return JSON.parse(match[0]);
-
-  } catch(e) {
-    console.warn('GCal fetch error:', e);
-    updateGCalPill('err', 'GCal Error');
-    return [];
-  }
-}
+const GCAL_ICS_URL  = 'https://calendar.google.com/calendar/ical/akhil304%40gmail.com/public/basic.ics';
+const GCAL_COLOR    = '#0288d1'; // distinct cyan-blue
+const GCAL_CACHE_K  = 'dp_gcal_ics';
+const GCAL_TIME_K   = 'dp_gcal_time';
+const GCAL_TTL      = 30 * 60 * 1000; // 30 min
 
 function updateGCalPill(state, label) {
   const p = document.getElementById('gcal-pill');
   if (!p) return;
-  p.className = 'sheet-pill ' + state;
-  p.innerHTML = '&#128197; ' + (label || 'GCal');
+  p.className = 'hdr-icon-btn ' + state;
+  p.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>${label||'GCal'}</span>`;
 }
 
-function injectGCalEvents(dateStr, events) {
-  if (!S.entries[dateStr]) S.entries[dateStr] = [];
+/* Parse ICS text → array of {summary, start, end, allDay} */
+function parseICS(ics) {
+  const events = [];
+  const blocks = ics.split('BEGIN:VEVENT');
+  blocks.slice(1).forEach(block => {
+    const get = (key) => {
+      const m = block.match(new RegExp(key + '(?:;[^:]*)?:([^\r\n]+)'));
+      return m ? m[1].trim() : '';
+    };
+    const summary  = get('SUMMARY')  || 'GCal Event';
+    const dtstart  = get('DTSTART')  || '';
+    const dtend    = get('DTEND')    || '';
+    const allDay   = dtstart.length === 8; // YYYYMMDD = all day
+    if (!dtstart) return;
+    events.push({ summary, dtstart, dtend, allDay });
+  });
+  return events;
+}
 
-  // Remove old gcal events for this date
+/* Convert ICS datetime "20260617T140000Z" or "20260617T140000" to local Date */
+function icsToDate(str) {
+  if (!str) return null;
+  if (str.length === 8) {
+    // All-day: YYYYMMDD
+    return new Date(str.slice(0,4)+'-'+str.slice(4,6)+'-'+str.slice(6,8)+'T00:00:00');
+  }
+  // With time: YYYYMMDDTHHMMSS[Z]
+  const d = str.replace(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z?)$/,
+    (_, y,mo,d,h,mi,s,z) => `${y}-${mo}-${d}T${h}:${mi}:${s}${z?'Z':''}`);
+  return new Date(d);
+}
+
+/* Filter events for a given date string "YYYY-MM-DD" */
+function gcalEventsForDate(events, dateStr) {
+  return events.filter(ev => {
+    const start = icsToDate(ev.dtstart);
+    if (!start) return false;
+    return start.toISOString().slice(0,10) === dateStr ||
+           start.toLocaleDateString('sv') === dateStr; // 'sv' locale = YYYY-MM-DD
+  });
+}
+
+/* Inject GCal events for current date into S.entries */
+function injectGCalForDate(events, dateStr) {
+  if (!S.entries[dateStr]) S.entries[dateStr] = [];
+  // Remove stale GCal entries
   S.entries[dateStr] = S.entries[dateStr].filter(e => !e.fromGCal);
 
-  events.forEach(ev => {
-    if (ev.allDay) return; // skip all-day for now
-    const start = new Date(ev.start);
-    const end   = new Date(ev.end);
+  const todays = gcalEventsForDate(events, dateStr);
+  todays.forEach(ev => {
+    if (ev.allDay) return; // skip all-day events
+    const start  = icsToDate(ev.dtstart);
+    const end    = icsToDate(ev.dtend);
+    if (!start) return;
     const startH = start.getHours() + (start.getMinutes() >= 30 ? 0.5 : 0);
-    const endH   = Math.ceil(end.getHours() + end.getMinutes() / 60);
-
-    if (startH < 0 || startH > 23) return;
-
+    const endH   = end ? (end.getHours() + (end.getMinutes() > 0 ? end.getMinutes()/60 : 0)) : startH + 1;
+    const roundedEnd = Math.ceil(endH * 2) / 2; // round to nearest 0.5
     S.entries[dateStr].push({
       id: S.nextId++,
-      label: ev.summary || 'GCal Event',
-      color: ev.color || GCAL_COLOR,
+      label: ev.summary,
+      color: GCAL_COLOR,
       type: 'task',
-      startH: Math.floor(startH),
-      endH: Math.max(Math.floor(startH) + 1, Math.min(24, endH)),
+      startH,
+      endH: Math.max(startH + 0.5, Math.min(24, roundedEnd)),
       srcId: null,
-      fromGCal: true,
-      gcalLink: ev.htmlLink || null
+      fromGCal: true
     });
   });
-
-  saveL(S);
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(S));
   renderEntries();
+  return todays.length;
 }
 
+/* Fetch ICS feed — try direct then CORS proxies */
+async function fetchICS() {
+  const proxies = [
+    GCAL_ICS_URL,
+    'https://api.allorigins.win/raw?url=' + encodeURIComponent(GCAL_ICS_URL),
+    'https://corsproxy.io/?' + encodeURIComponent(GCAL_ICS_URL),
+  ];
+  for (const url of proxies) {
+    try {
+      const r = await fetch(url, { cache: 'no-store' });
+      if (!r.ok) continue;
+      const text = await r.text();
+      if (text.includes('BEGIN:VCALENDAR')) {
+        localStorage.setItem(GCAL_CACHE_K, text);
+        localStorage.setItem(GCAL_TIME_K, Date.now().toString());
+        return text;
+      }
+    } catch(e) { /* try next */ }
+  }
+  return localStorage.getItem(GCAL_CACHE_K) || null; // fall back to cache
+}
+
+let gcalEvents = null;
 let gcalFetching = false;
-async function syncGCal(dateStr) {
+
+async function syncGCal(dateStr, force=false) {
   if (gcalFetching) return;
   gcalFetching = true;
   updateGCalPill('busy', 'Loading...');
 
-  const events = await fetchGCalEvents(dateStr);
-  injectGCalEvents(dateStr, events);
+  // Use cache if fresh (< 30 min)
+  const lastFetch = parseInt(localStorage.getItem(GCAL_TIME_K)||'0');
+  const cached    = localStorage.getItem(GCAL_CACHE_K);
+  let ics = null;
 
-  if (events.length > 0) {
-    updateGCalPill('ok', 'GCal (' + events.length + ')');
+  if (!force && cached && (Date.now()-lastFetch) < GCAL_TTL) {
+    ics = cached;
   } else {
-    updateGCalPill('ok', 'GCal ✓');
+    ics = await fetchICS();
+  }
+
+  if (ics) {
+    gcalEvents = parseICS(ics);
+    const n = injectGCalForDate(gcalEvents, dateStr);
+    updateGCalPill('ok', n > 0 ? `GCal (${n})` : 'GCal ✓');
+    console.log(`[GCal] ${gcalEvents.length} total events, ${n} on ${dateStr}`);
+  } else {
+    updateGCalPill('err', 'GCal offline');
+    console.warn('[GCal] Could not fetch ICS feed');
   }
   gcalFetching = false;
 }
@@ -1295,6 +1336,10 @@ initCloud();
 setTimeout(async()=>{
   await refreshSheetData();
 }, 1500);
+// 7. Sync Google Calendar ICS
+setTimeout(()=>syncGCal(dk(), false), 2000);
+// 8. Re-sync GCal every 30 min
+setInterval(()=>syncGCal(dk(), true), 30*60*1000);
 
 // 7. Schedule weekly re-check
 setInterval(async()=>{
