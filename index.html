@@ -550,9 +550,35 @@ function sbH(){return{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-
 function updateCloudPill(state,label){const p=document.getElementById('cloud-pill');if(!p)return;p.className='hdr-icon-btn '+state;p.innerHTML='&#9729; '+(label||'Cloud');}
 function updateSheetPill(state,label){const p=document.getElementById('sheet-pill');if(!p)return;p.className='hdr-icon-btn '+state;p.innerHTML='&#9783; '+(label||'Sheet');}
 async function cFetch(){if(!cloudEnabled){updateCloudPill('err','No cloud');return null;}updateCloudPill('busy','Syncing...');try{const r=await fetch(SB_URL+'/rest/v1/planner?key=eq.planner_data&select=value',{headers:sbH()});if(!r.ok)throw 0;const rows=await r.json();if(!rows||!rows.length){updateCloudPill('ok','Cloud OK');return null;}const remote=JSON.parse(rows[0].value);updateCloudPill('ok','Cloud OK');lastHash=rows[0].value;return remote;}catch(e){updateCloudPill('err','Cloud Error');return null;}}
-async function cPush(s){if(!cloudEnabled){updateCloudPill('err','No cloud');return;}const v=JSON.stringify(s);if(v===lastHash)return;updateCloudPill('busy','Saving...');try{await fetch(SB_URL+'/rest/v1/planner',{method:'POST',headers:{...sbH(),'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({key:'planner_data',value:v,updated_at:new Date().toISOString()})});lastHash=v;updateCloudPill('ok','Saved '+new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}));}catch(e){updateCloudPill('err','Save failed');}}
+async function cPush(s){
+  if(!cloudEnabled){updateCloudPill('err','No cloud');return;}
+  // Strip fromSheet (Another World) entries — they are re-injected locally, never stored in cloud
+  const clean=JSON.parse(JSON.stringify(s));
+  Object.keys(clean.entries||{}).forEach(dk=>{
+    clean.entries[dk]=(clean.entries[dk]||[]).filter(e=>!e.fromSheet&&!e.fromGCal);
+    if(!clean.entries[dk].length)delete clean.entries[dk];
+  });
+  const v=JSON.stringify(clean);if(v===lastHash)return;updateCloudPill('busy','Saving...');try{await fetch(SB_URL+'/rest/v1/planner',{method:'POST',headers:{...sbH(),'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({key:'planner_data',value:v,updated_at:new Date().toISOString()})});lastHash=v;updateCloudPill('ok','Saved '+new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}));}catch(e){updateCloudPill('err','Save failed');}}
 function schedPush(){clearTimeout(syncTimer);syncTimer=setTimeout(()=>cPush(S),1500);}
-async function initCloud(){if(!cloudEnabled)return;const r=await cFetch();if(r){S=migr(r);saveL(S);renderAll();toast('Cloud synced');}else cPush(S);setInterval(async()=>{const r=await cFetch();if(r&&JSON.stringify(r)!==JSON.stringify(S)){S=migr(r);saveL(S);renderAll();toast('Updated from another device');}},30000);}
+async function initCloud(){
+  if(!cloudEnabled)return;
+  const r=await cFetch();
+  if(r){S=migr(r);saveL(S);}
+  else{cPush(S);}
+  // Always inject after cloud load — cloud never stores AW entries
+  injectAnotherWorld();
+  renderAll();
+  if(r)toast('Cloud synced');
+  setInterval(async()=>{
+    const r=await cFetch();
+    if(r&&JSON.stringify(r)!==JSON.stringify(S)){
+      S=migr(r);saveL(S);
+      injectAnotherWorld(); // re-inject after every remote sync
+      renderAll();
+      toast('Updated from another device');
+    }
+  },30000);
+}
 
 /* ---- STORE ---- */
 function blank(){return{tasks:[],reminders:[],entries:{},nextId:1,clocks:['America/New_York','Europe/London']}}
@@ -565,11 +591,7 @@ function migr(d){
   d.clocks=d.clocks.slice(0,2);
   while(d.clocks.length<2)d.clocks.push('Europe/London');
   if(!d.nextId)d.nextId=1;
-  // Clean stale "Another World" entries so injectAnotherWorld() re-adds them cleanly
-  Object.keys(d.entries||{}).forEach(dk=>{
-    d.entries[dk]=(d.entries[dk]||[]).filter(e=>e.label!=='Another World');
-    if(!d.entries[dk].length)delete d.entries[dk];
-  });
+  // Note: Another World entries are managed by injectAnotherWorld(), not stored in cloud
   return d;
 }
 function loadL(){try{const p=new URLSearchParams(location.search).get('d');if(p){const d=migr(JSON.parse(atob(p)));history.replaceState(null,'',location.pathname);saveL(d);return d;}for(const k of[LOCAL_KEY,'dp_v5','dp_v4','dp_v3','dp_v2','dp_v1','dpState2','dpState']){const s=localStorage.getItem(k);if(s)return migr(JSON.parse(s));}}catch(e){}return blank();}
@@ -1029,19 +1051,23 @@ async function syncGCal(dateStr) {
 
 
 function renderAll(){renderClocks();renderCal();renderLists();}
+// 1. Render UI first
 renderAll();
 mountMobCal();
+// 2. Inject Another World immediately into loaded S
 injectAnotherWorld();
-// Set initial pill states
+// 3. Re-render calendar to show injected entries
+renderEntries();
+// 4. Set pill states
 updateCloudPill(cloudEnabled?'busy':'err', cloudEnabled?'Connecting...':'No cloud');
 updateSheetPill('busy','Checking sheet...');
+// 5. Cloud sync (injectAnotherWorld called inside initCloud after each sync)
 initCloud();
-// Refresh sheet data in background after 2s
+// 6. Refresh Google Sheet in background
 setTimeout(async()=>{
   await refreshSheetData();
-  // If sheet pills not updated by refreshSheetData (no changes), show cached ok
   const sp=document.getElementById('sheet-pill');
-  if(sp&&sp.classList.contains('busy'))updateSheetPill('ok','Sheet ✓ (cached)');
+  if(sp&&sp.classList.contains('busy'))updateSheetPill('ok','Sheet (cached)');
 }, 2000);
 </script>
 
