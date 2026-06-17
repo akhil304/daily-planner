@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- build: 2026-06-17-v3 -->
+<!-- build: 2026-06-17-v4 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -880,8 +880,8 @@ const AW_COLOR   = '#7b1fa2';
 const AW_NAME    = 'Another World';
 const AW_START   = 16;
 const AW_END     = 21;
-const CACHE_DATES_KEY = 'dp_aw_dates_v2';
-const CACHE_TIME_KEY  = 'dp_aw_fetched_v2';
+const CACHE_DATES_KEY = 'dp_aw_dates_v3';
+const CACHE_TIME_KEY  = 'dp_aw_fetched_v3';
 const REFRESH_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 // Hardcoded fallback (June+July 2026 from sheet)
@@ -916,55 +916,116 @@ function parseSheetDate(raw) {
   return null;
 }
 
+function isWeekend(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.getDay() === 0 || d.getDay() === 6; // 0=Sun, 6=Sat
+}
+
 function parseSheetCSV(csv) {
   const lines = csv.trim().split('\n');
-  const dates = [];
+  // Result: array of {date, startH, endH, label}
+  const entries = [];
   const header = lines[0].toLowerCase();
   const dataLines = header.includes('date')||header.includes('day') ? lines.slice(1) : lines;
   dataLines.forEach(line => {
-    // Handle quoted CSV properly
-    const cols = line.match(/(".*?"|[^,]+|(?<=,)(?=,)|^(?=,))/g) || line.split(',');
+    const cols = line.match(/(".*?"|[^,]+)/g) || line.split(',');
     const clean = cols.map(c=>(c||'').replace(/^["\s]+|["\s]+$/g,''));
     const dateRaw = clean[0] || '';
-    const emp1    = (clean[2]||'').toLowerCase();
-    const emp2    = (clean[3]||'').toLowerCase();
-    if ((emp1.includes('akhil') || emp2.includes('akhil')) && dateRaw) {
-      const d = parseSheetDate(dateRaw);
-      if (d) dates.push(d);
+    if (!dateRaw) return;
+    const dateStr = parseSheetDate(dateRaw);
+    if (!dateStr) return;
+
+    const emp1  = (clean[2]||'').toLowerCase();
+    const emp2  = (clean[3]||'').toLowerCase();
+    const notes = (clean[4]||clean[5]||'').toLowerCase(); // notes col
+    const allCols = clean.join(' ').toLowerCase();
+
+    const hasAkhil = emp1.includes('akhil') || emp2.includes('akhil');
+    const isParty  = allCols.includes('party booking') || allCols.includes('all hands on deck') || allCols.includes('all hands');
+    const weekend  = isWeekend(dateStr);
+
+    if (hasAkhil) {
+      entries.push({
+        date: dateStr,
+        startH: weekend ? 12 : 16,  // weekend 12pm, weekday 4pm
+        endH: 21,                    // always 9pm
+        label: AW_NAME,
+        reason: weekend ? 'weekend-shift' : 'weekday-shift'
+      });
+    } else if (isParty) {
+      // Party Booking / All Hands — book 12pm-9pm regardless of who's listed
+      entries.push({
+        date: dateStr,
+        startH: 12,
+        endH: 21,
+        label: AW_NAME,
+        reason: 'party-all-hands'
+      });
     }
   });
-  return [...new Set(dates)].sort();
+  // Dedupe by date (keep first occurrence)
+  const seen = new Set();
+  return entries.filter(e => { if(seen.has(e.date)) return false; seen.add(e.date); return true; });
 }
 
-function getCachedDates() {
+function getCachedEntries() {
   try {
     const c = localStorage.getItem(CACHE_DATES_KEY);
-    return c ? JSON.parse(c) : FALLBACK_DATES;
-  } catch(e) { return FALLBACK_DATES; }
+    if (!c) return null;
+    const parsed = JSON.parse(c);
+    // Support both old format (string[]) and new format (object[])
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      if (typeof parsed[0] === 'string') {
+        // Old format — convert to new with weekend detection
+        return parsed.map(date => ({
+          date,
+          startH: isWeekend(date) ? 12 : 16,
+          endH: 21,
+          label: AW_NAME,
+          reason: isWeekend(date) ? 'weekend-shift' : 'weekday-shift'
+        }));
+      }
+      return parsed; // already new format
+    }
+    return null;
+  } catch(e) { return null; }
+}
+
+function getFallbackEntries() {
+  return FALLBACK_DATES.map(date => ({
+    date,
+    startH: isWeekend(date) ? 12 : 16,
+    endH: 21,
+    label: AW_NAME,
+    reason: isWeekend(date) ? 'weekend-shift' : 'weekday-shift'
+  }));
 }
 
 function injectAnotherWorld() {
-  const dates = getCachedDates();
-  // Wipe all AW entries across ALL dates
+  const entries = getCachedEntries() || getFallbackEntries();
+  // Wipe all existing AW entries across ALL dates
   Object.keys(S.entries).forEach(dk => {
     S.entries[dk] = (S.entries[dk]||[]).filter(e => e.label !== AW_NAME);
     if (!S.entries[dk].length) delete S.entries[dk];
   });
-  // Re-inject fresh
-  let count = 0;
-  dates.forEach(dateStr => {
-    if (!S.entries[dateStr]) S.entries[dateStr] = [];
-    S.entries[dateStr].push({
-      id: S.nextId++, label: AW_NAME, color: AW_COLOR,
-      type: 'task', startH: AW_START, endH: AW_END,
-      srcId: null, fromSheet: true
+  // Re-inject with correct times per entry
+  entries.forEach(({date, startH, endH, label, reason}) => {
+    if (!S.entries[date]) S.entries[date] = [];
+    S.entries[date].push({
+      id: S.nextId++,
+      label: label || AW_NAME,
+      color: reason === 'party-all-hands' ? '#e53935' : AW_COLOR, // red for party events
+      type: 'task',
+      startH,
+      endH,
+      srcId: null,
+      fromSheet: true
     });
-    count++;
+    console.log(`[Sheet] ${date} ${reason}: ${startH}:00-${endH}:00`);
   });
-  // Save locally only (not to cloud — re-injected each session)
   localStorage.setItem(LOCAL_KEY, JSON.stringify(S));
   renderEntries();
-  console.log(`[Sheet] Injected "${AW_NAME}" on ${count} dates`);
+  console.log(`[Sheet] Injected "${AW_NAME}" on ${entries.length} dates (weekdays 4pm, weekends 12pm)`);
 }
 
 async function fetchCSVFromURL(url) {
@@ -1006,13 +1067,14 @@ async function refreshSheetData(force=false) {
       localStorage.setItem(CACHE_DATES_KEY, JSON.stringify(dates));
       localStorage.setItem(CACHE_TIME_KEY, String(Date.now()));
       injectAnotherWorld();
-      updateSheetPill('ok', `Sheet ✓ (${dates.length} days)`);
-      toast(`Sheet synced — ${dates.length} Akhil work days loaded`);
+      const wknd = dates.filter(e=>isWeekend(e.date)).length;
+      const wkdy = dates.length - wknd;
+      updateSheetPill('ok', `Sheet ✓ (${dates.length})`);
+      toast(`Sheet synced: ${wkdy} weekdays (4-9pm) + ${wknd} weekends (12-9pm)`);
     } else {
       updateSheetPill('err', 'Sheet: no Akhil rows found');
-      console.warn('[Sheet] CSV fetched but no Akhil dates found. Check column positions. Sample:\n', csv.slice(0,400));
-      // Still inject fallback
-      injectAnotherWorld();
+      console.warn('[Sheet] CSV fetched but no matching rows. Sample CSV:', csv.slice(0,400));
+      injectAnotherWorld(); // fallback
     }
   } else {
     // All fetch attempts failed — use cached or fallback
