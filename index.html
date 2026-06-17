@@ -101,38 +101,36 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f2f5;display:flex
   .hdr-drag:hover,.hdr-drag.dragging{background:#c5cae9;color:#5c6bc0}
   /* title: 23% */
   .hdr-title{flex:0 0 23%;background:#fff;border-right:none}
-  .desk-h1{font-size:16px;font-weight:800;color:#1a1a2e;white-space:nowrap}
+  .desk-h1{font-size:18px;font-weight:800;color:#1a1a2e;white-space:nowrap}
   /* date: 32% — centred nav */
   .hdr-date{flex:0 0 32%;background:#f9f0ff}
   .desk-nav-box{display:flex;align-items:center;gap:6px;white-space:nowrap}
   .dnb-nav{background:none;border:none;cursor:pointer;font-size:17px;color:#7b1fa2;font-weight:800;line-height:1;padding:0 2px}
   .dnb-nav:hover{color:#4a148c}
-  #desk-date{font-size:13px;font-weight:700;color:#4a148c;white-space:nowrap;min-width:100px;text-align:center}
-  #desk-today{background:#7b1fa2;color:#fff;border:none;border-radius:12px;padding:3px 11px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
+  #desk-date{font-size:15px;font-weight:700;color:#4a148c;white-space:nowrap;min-width:100px;text-align:center}
+  #desk-today{background:#7b1fa2;color:#fff;border:none;border-radius:12px;padding:3px 11px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
   #desk-today:hover{background:#6a1b9a}
   /* clocks: 23% — 3 equal boxes */
   .hdr-clocks{flex:0 0 23%;background:#e3f2fd;padding:4px 6px;gap:4px}
   .desk-clocks{display:flex;gap:4px;width:100%}
   .clock-box{padding:3px 5px;min-width:0;flex:1;border-radius:7px}
-  .ck-label{font-size:8px!important;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .ck-time{font-size:11px!important;letter-spacing:.1px;font-variant-numeric:tabular-nums}
-  .ck-sub{font-size:7px!important}
-  /* status: 22% */
-  .hdr-status{flex:0 0 22%;flex-direction:column;gap:3px;align-items:flex-start;padding:6px 10px;background:#f1f8e9;border-left:1px solid #e0e0e0}
-  .sync-pill{display:inline-flex;align-items:center;gap:3px;border-radius:10px;padding:2px 7px;font-size:10px;font-weight:700;cursor:pointer;border:none;white-space:nowrap;width:100%}
-  .sync-pill.ok{background:#e8f5e9;color:#2e7d32}
-  .sync-pill.ok::before{content:'●';color:#43a047;font-size:7px}
-  .sync-pill.err{background:#ffebee;color:#c62828}
-  .sync-pill.err::before{content:'●';color:#e53935;font-size:7px}
-  .sync-pill.busy{background:#fff8e1;color:#f57f17}
-  .sync-pill.busy::before{content:'◌';color:#ff8f00;font-size:7px}
-  .sheet-pill{display:inline-flex;align-items:center;gap:3px;border-radius:10px;padding:2px 7px;font-size:10px;font-weight:700;border:none;cursor:default;white-space:nowrap;width:100%}
-  .sheet-pill.ok{background:#e8f5e9;color:#2e7d32}
-  .sheet-pill.ok::before{content:'●';color:#43a047;font-size:7px}
-  .sheet-pill.err{background:#ffebee;color:#c62828}
-  .sheet-pill.err::before{content:'●';color:#e53935;font-size:7px}
-  .sheet-pill.busy{background:#fff8e1;color:#f57f17}
-  .sheet-pill.busy::before{content:'◌';color:#ff8f00;font-size:7px}
+  .ck-label{font-size:10px!important;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ck-time{font-size:13px!important;letter-spacing:.1px;font-variant-numeric:tabular-nums}
+  .ck-sub{font-size:9px!important}
+  /* status: 22% — 5 icon buttons horizontal */
+  .hdr-status{flex:0 0 22%;flex-direction:row;gap:4px;align-items:center;justify-content:center;padding:0 8px;background:#fafafa;border-left:1px solid #e8e8e8}
+  .hdr-icon-btn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 5px;border-radius:8px;border:1.5px solid transparent;cursor:pointer;font-size:9px;font-weight:700;min-width:36px;transition:all .15s;background:none}
+  .hdr-icon-btn span{font-size:9px;font-weight:700;white-space:nowrap;line-height:1}
+  .hdr-icon-btn svg{flex-shrink:0}
+  .hdr-icon-btn.ok{color:#2e7d32;border-color:#a5d6a7;background:#f1f8f1}
+  .hdr-icon-btn.ok svg{stroke:#43a047}
+  .hdr-icon-btn.err{color:#c62828;border-color:#ef9a9a;background:#fff5f5}
+  .hdr-icon-btn.err svg{stroke:#e53935}
+  .hdr-icon-btn.busy{color:#f57f17;border-color:#ffcc80;background:#fffaf0}
+  .hdr-icon-btn.busy svg{stroke:#ff8f00}
+  .hdr-icon-btn.off{color:#aaa;border-color:#e0e0e0;background:#fafafa}
+  .hdr-icon-btn.off svg{stroke:#bbb}
+  .hdr-icon-btn:hover{transform:translateY(-1px);box-shadow:0 2px 6px rgba(0,0,0,.1)}
   #desk-sync{display:none}
   /* Desktop main split */
   .desk-main{display:flex;flex:1;overflow:hidden}
@@ -231,6 +229,29 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f2f5;display:flex
   .mob-clock-off{font-size:12px;color:#999;margin-top:2px}
   .mob-clock-time{font-size:26px;font-weight:700;color:#1a1a2e;font-variant-numeric:tabular-nums;letter-spacing:-0.5px}
 }
+
+  /* ── Daily Notes ── */
+  .notes-fab{position:fixed;bottom:80px;right:20px;width:48px;height:48px;border-radius:50%;background:#5c6bc0;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.2);z-index:200;transition:background .2s}
+  .notes-fab:hover{background:#3949ab}
+  .notes-fab svg{stroke:#fff;fill:none;width:22px;height:22px;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  #notes-panel{display:none;position:fixed;bottom:140px;right:16px;width:320px;background:var(--color-bg,#fff);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.18);z-index:300;flex-direction:column;overflow:hidden;border:1px solid #e0e0e0}
+  #notes-panel.open{display:flex}
+  .notes-header{background:#5c6bc0;padding:10px 14px;display:flex;align-items:center;gap:8px;color:#fff}
+  .notes-header span{font-size:13px;font-weight:700;flex:1}
+  .notes-header button{background:none;border:none;color:rgba(255,255,255,.8);cursor:pointer;font-size:18px;line-height:1;padding:0}
+  .notes-date-lbl{font-size:11px;color:rgba(255,255,255,.7);padding:0 14px 6px;background:#5c6bc0;margin-top:-4px}
+  .notes-body{padding:10px 12px;flex:1;display:flex;flex-direction:column;gap:8px;background:#fff}
+  #notes-ta{flex:1;min-height:120px;border:1px solid #e0e0e0;border-radius:10px;padding:10px;font-size:14px;font-family:inherit;resize:none;outline:none;color:#1a1a2e;line-height:1.5}
+  #notes-ta:focus{border-color:#5c6bc0}
+  .notes-actions{display:flex;gap:6px;align-items:center}
+  .voice-btn{display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:20px;border:1.5px solid #5c6bc0;background:#fff;color:#5c6bc0;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s}
+  .voice-btn:hover{background:#5c6bc0;color:#fff}
+  .voice-btn.recording{background:#e53935;border-color:#e53935;color:#fff;animation:pulse 1s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+  .voice-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .notes-save-btn{flex:1;padding:7px 12px;border-radius:20px;border:none;background:#5c6bc0;color:#fff;font-size:12px;font-weight:700;cursor:pointer}
+  .notes-save-btn:hover{background:#3949ab}
+  .notes-char{font-size:10px;color:#aaa;text-align:right}
 </style>
 </head>
 <body>
@@ -281,11 +302,28 @@ create policy "public rw" on planner for all using (true) with check (true);</co
     <div class="desk-clocks" id="desk-clocks"></div>
   </div>
   <div class="hdr-drag" data-drag="3">&#8942;</div>
-  <!-- status 22% -->
+  <!-- status 22% — 5 icon buttons horizontal -->
   <div class="hdr-sec hdr-status" id="hdr-s4">
-    <button class="sync-pill err" id="cloud-pill" onclick="openSync()">&#9729; Cloud</button>
-    <span class="sheet-pill busy" id="sheet-pill">&#9783; Sheet</span>
-    <button class="sheet-pill busy" id="gcal-pill" onclick="syncGCal(dk())" title="Sync Google Calendar">&#128197; GCal</button>
+    <button class="hdr-icon-btn err" id="cloud-pill" onclick="openSync()" title="Cloud sync">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+      <span>Cloud</span>
+    </button>
+    <button class="hdr-icon-btn busy" id="sheet-pill" title="Google Sheet sync">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+      <span>Sheet</span>
+    </button>
+    <button class="hdr-icon-btn busy" id="gcal-pill" onclick="syncGCal(dk())" title="Google Calendar sync">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span>GCal</span>
+    </button>
+    <button class="hdr-icon-btn off" id="integ-4" title="Integration 4 (coming soon)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+      <span>Int 4</span>
+    </button>
+    <button class="hdr-icon-btn off" id="integ-5" title="Integration 5 (coming soon)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+      <span>Int 5</span>
+    </button>
   </div>
 </div>
 <div class="desk-main">
@@ -509,8 +547,8 @@ let SB_URL='',SB_KEY='',cloudEnabled=false,syncTimer=null,lastHash='';
 function loadCreds(){SB_URL=localStorage.getItem('sb_url')||'';SB_KEY=localStorage.getItem('sb_key')||'';cloudEnabled=!!(SB_URL&&SB_KEY);}
 function saveCreds(u,k){SB_URL=u;SB_KEY=k;localStorage.setItem('sb_url',u);localStorage.setItem('sb_key',k);cloudEnabled=!!(u&&k);}
 function sbH(){return{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'};}
-function updateCloudPill(state,label){const p=document.getElementById('cloud-pill');if(!p)return;p.className='sync-pill '+state;p.innerHTML='&#9729; '+(label||'Cloud');}
-function updateSheetPill(state,label){const p=document.getElementById('sheet-pill');if(!p)return;p.className='sheet-pill '+state;p.innerHTML='&#9783; '+(label||'Sheet');}
+function updateCloudPill(state,label){const p=document.getElementById('cloud-pill');if(!p)return;p.className='hdr-icon-btn '+state;p.innerHTML='&#9729; '+(label||'Cloud');}
+function updateSheetPill(state,label){const p=document.getElementById('sheet-pill');if(!p)return;p.className='hdr-icon-btn '+state;p.innerHTML='&#9783; '+(label||'Sheet');}
 async function cFetch(){if(!cloudEnabled){updateCloudPill('err','No cloud');return null;}updateCloudPill('busy','Syncing...');try{const r=await fetch(SB_URL+'/rest/v1/planner?key=eq.planner_data&select=value',{headers:sbH()});if(!r.ok)throw 0;const rows=await r.json();if(!rows||!rows.length){updateCloudPill('ok','Cloud OK');return null;}const remote=JSON.parse(rows[0].value);updateCloudPill('ok','Cloud OK');lastHash=rows[0].value;return remote;}catch(e){updateCloudPill('err','Cloud Error');return null;}}
 async function cPush(s){if(!cloudEnabled){updateCloudPill('err','No cloud');return;}const v=JSON.stringify(s);if(v===lastHash)return;updateCloudPill('busy','Saving...');try{await fetch(SB_URL+'/rest/v1/planner',{method:'POST',headers:{...sbH(),'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({key:'planner_data',value:v,updated_at:new Date().toISOString()})});lastHash=v;updateCloudPill('ok','Saved '+new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}));}catch(e){updateCloudPill('err','Save failed');}}
 function schedPush(){clearTimeout(syncTimer);syncTimer=setTimeout(()=>cPush(S),1500);}
@@ -736,9 +774,8 @@ function renderDeskRems(){
     c.addEventListener('dragend',()=>{dragItem=null;c.classList.remove('dragging')});
     const dot=mk('div','i-dot sq');dot.style.background=r.color||'#455a64';
     const nm=mkNm(r.name,v=>{r.name=v;Object.values(S.entries).forEach(arr=>arr.forEach(e=>{if(e.autoId===r.id||e.srcId===r.id)e.label=v}));save();renderEntries();renderMobRems();});
-    const ti=mkTi(r,()=>{renderEntries();renderMobRems();});
     const del=mkDel(()=>{rmRem(r.id);save();renderLists();renderEntries();});
-    c.appendChild(dot);c.appendChild(nm);c.appendChild(ti);c.appendChild(del);wrap.appendChild(c);list.appendChild(wrap);
+    c.appendChild(dot);c.appendChild(nm);c.appendChild(del);wrap.appendChild(c);list.appendChild(wrap);
   });
 }
 
@@ -765,12 +802,8 @@ function renderMobRems(){
     const dot=mk('div','mob-dot sq');dot.style.background=r.color||'#455a64';
     const nm=mk('input','mob-name');nm.value=r.name;
     nm.addEventListener('blur',()=>{r.name=nm.value;Object.values(S.entries).forEach(arr=>arr.forEach(e=>{if(e.autoId===r.id||e.srcId===r.id)e.label=r.name}));save();renderEntries();renderDeskRems();});
-    const ti=mk('input','mob-time'+(r.time?' set':''));ti.value=r.time||'';ti.placeholder='HH:MM';
-    ti.addEventListener('focus',()=>ti.select());
-    ti.addEventListener('keydown',e=>{if(e.key==='Enter')ti.blur()});
-    ti.addEventListener('blur',()=>{const p=parseT(ti.value);const nv=p||'';if(nv===r.time)return;r.time=nv;ti.value=nv;ti.className='mob-time'+(nv?' set':'');Object.keys(S.entries).forEach(dd=>{S.entries[dd]=(S.entries[dd]||[]).filter(e=>e.autoId!==r.id);if(!S.entries[dd].length)delete S.entries[dd];});save();if(nv)autoPlace(dk());renderEntries();renderDeskRems();});
     const del=mk('button','mob-del');del.innerHTML='&times;';del.onclick=()=>{rmRem(r.id);save();renderLists();renderEntries();};
-    c.appendChild(dot);c.appendChild(nm);c.appendChild(ti);c.appendChild(del);wrap.appendChild(c);list.appendChild(wrap);
+    c.appendChild(dot);c.appendChild(nm);c.appendChild(del);wrap.appendChild(c);list.appendChild(wrap);
   });
 }
 
@@ -1010,6 +1043,125 @@ setTimeout(async()=>{
   const sp=document.getElementById('sheet-pill');
   if(sp&&sp.classList.contains('busy'))updateSheetPill('ok','Sheet ✓ (cached)');
 }, 2000);
+</script>
+
+<!-- Daily Notes Panel -->
+<button class="notes-fab" id="notes-fab" title="Daily notes &amp; voice">
+  <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+</button>
+<div id="notes-panel">
+  <div class="notes-header">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    <span>Daily Notes</span>
+    <span class="notes-date-lbl" id="notes-date-disp" style="font-size:12px;color:rgba(255,255,255,.85);font-weight:600"></span>
+    <button onclick="closeNotes()">&#10005;</button>
+  </div>
+  <div class="notes-body">
+    <textarea id="notes-ta" placeholder="Write notes for this day... or tap the mic to dictate"></textarea>
+    <div class="notes-char" id="notes-char">0 chars</div>
+    <div class="notes-actions">
+      <button class="voice-btn" id="voice-btn" onclick="toggleVoice()">
+        <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        <span id="voice-lbl">Dictate</span>
+      </button>
+      <button class="notes-save-btn" onclick="saveNotes()">Save note</button>
+    </div>
+  </div>
+</div>
+<script>
+
+/* ── DAILY NOTES + VOICE ── */
+let notesOpen = false;
+let voiceRec = null;
+let voiceActive = false;
+
+function openNotes() {
+  notesOpen = true;
+  document.getElementById('notes-panel').classList.add('open');
+  const d = dk();
+  document.getElementById('notes-date-disp').textContent = cur.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+  const saved = (S.notes && S.notes[d]) || '';
+  const ta = document.getElementById('notes-ta');
+  ta.value = saved;
+  updateNotesChar();
+  ta.focus();
+}
+function closeNotes() {
+  saveNotes();
+  notesOpen = false;
+  document.getElementById('notes-panel').classList.remove('open');
+}
+function saveNotes() {
+  if(!S.notes) S.notes = {};
+  const d = dk();
+  const val = document.getElementById('notes-ta').value.trim();
+  if(val) S.notes[d] = val;
+  else delete S.notes[d];
+  save();
+  toast('Note saved');
+}
+function updateNotesChar() {
+  const ta = document.getElementById('notes-ta');
+  if(!ta) return;
+  const n = ta.value.length;
+  document.getElementById('notes-char').textContent = n + ' chars' + (n > 0 ? ' · ' + ta.value.split(/\s+/).filter(Boolean).length + ' words' : '');
+}
+document.getElementById('notes-ta').addEventListener('input', updateNotesChar);
+document.getElementById('notes-fab').onclick = () => notesOpen ? closeNotes() : openNotes();
+
+function toggleVoice() {
+  if(!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    toast('Voice not supported in this browser. Try Chrome.');
+    return;
+  }
+  if(voiceActive) {
+    voiceRec && voiceRec.stop();
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  voiceRec = new SR();
+  voiceRec.continuous = true;
+  voiceRec.interimResults = true;
+  voiceRec.lang = 'en-US';
+  const ta = document.getElementById('notes-ta');
+  const base = ta.value;
+  let interim = '';
+  voiceRec.onstart = () => {
+    voiceActive = true;
+    document.getElementById('voice-btn').classList.add('recording');
+    document.getElementById('voice-lbl').textContent = 'Listening...';
+  };
+  voiceRec.onresult = e => {
+    interim = '';
+    let final = base;
+    for(let i=0;i<e.results.length;i++) {
+      if(e.results[i].isFinal) final += (final?' ':'') + e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    ta.value = final + (interim ? ' ' + interim : '');
+    updateNotesChar();
+  };
+  voiceRec.onend = () => {
+    voiceActive = false;
+    document.getElementById('voice-btn').classList.remove('recording');
+    document.getElementById('voice-lbl').textContent = 'Dictate';
+    ta.value = ta.value.trimEnd();
+    updateNotesChar();
+  };
+  voiceRec.start();
+}
+
+// Update notes panel when date changes
+const _origUpdateDates = updateDates;
+updateDates = function() {
+  _origUpdateDates();
+  if(notesOpen) {
+    document.getElementById('notes-date-disp').textContent = cur.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+    const ta = document.getElementById('notes-ta');
+    if(ta) { ta.value=(S.notes&&S.notes[dk()])||''; updateNotesChar(); }
+  }
+};
+
 </script>
 </body>
 </html>
