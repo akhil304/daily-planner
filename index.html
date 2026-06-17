@@ -382,54 +382,42 @@ create policy "public rw" on planner for all using (true) with check (true);</co
 <script>
 /* ---- HEADER SECTION DRAG-RESIZE ---- */
 (function(){
-  // Store widths in px for each section
-  const SEC_IDS = ['hdr-s1','hdr-s2','hdr-s3','hdr-s4'];
-  const MIN_W = {s1:100, s2:150, s3:160, s4:100};
+  const MIN_W = [80, 150, 160, 90]; // min px per section 1-4
 
   function initHdrDrag(){
     const header = document.getElementById('desk-header');
-    if(!header) return;
-    // Don't reset CSS-defined widths — they're already set
-    // Just ensure flex sections get locked widths for drag
-    const s2=document.getElementById('hdr-s2');
-    if(s2 && !s2.style.width && s2.offsetWidth>0){
-      s2.style.width=s2.offsetWidth+'px';
-      s2.style.flex='none';
-    }
+    if(!header || window.innerWidth < 640) return;
+    // Lock all section widths to current rendered width
+    [1,2,3,4].forEach(i=>{
+      const el=document.getElementById('hdr-s'+i);
+      if(el){el.style.width=el.offsetWidth+'px';el.style.flex='none';}
+    });
 
     header.querySelectorAll('.hdr-drag').forEach(handle=>{
-      let dragging=false, startX=0, secA, secB, wA0, wB0;
-      const idx = parseInt(handle.dataset.drag);
-
-      handle.addEventListener('mousedown', e=>{
+      let drag=false,sx=0,secA,secB,wA0,wB0;
+      const idx=parseInt(handle.dataset.drag);
+      handle.addEventListener('mousedown',e=>{
         e.preventDefault();
-        dragging=true;
-        startX=e.clientX;
+        drag=true; sx=e.clientX;
         secA=document.getElementById('hdr-s'+idx);
         secB=document.getElementById('hdr-s'+(idx+1));
-        wA0=secA.offsetWidth;
-        wB0=secB.offsetWidth;
+        if(!secA||!secB)return;
+        wA0=secA.offsetWidth; wB0=secB.offsetWidth;
         handle.classList.add('dragging');
         document.body.style.cursor='col-resize';
         document.body.style.userSelect='none';
       });
-
-      document.addEventListener('mousemove', e=>{
-        if(!dragging)return;
-        const dx=e.clientX-startX;
-        const minA=Object.values(MIN_W)[idx-1]||80;
-        const minB=Object.values(MIN_W)[idx]||80;
-        const nwA=Math.max(minA, wA0+dx);
-        const nwB=Math.max(minB, wB0-dx);
+      document.addEventListener('mousemove',e=>{
+        if(!drag||!secA||!secB)return;
+        const dx=e.clientX-sx;
+        const nwA=Math.max(MIN_W[idx-1]||80, wA0+dx);
+        const nwB=Math.max(MIN_W[idx]||80, wB0-dx);
         secA.style.width=nwA+'px';
-        secA.style.flex='none';
         secB.style.width=nwB+'px';
-        secB.style.flex=idx===1?'1':'none'; // clocks section keeps flex:1 behaviour
       });
-
-      document.addEventListener('mouseup', ()=>{
-        if(!dragging)return;
-        dragging=false;
+      document.addEventListener('mouseup',()=>{
+        if(!drag)return;
+        drag=false; secA=null; secB=null;
         handle.classList.remove('dragging');
         document.body.style.cursor='';
         document.body.style.userSelect='';
@@ -437,9 +425,8 @@ create policy "public rw" on planner for all using (true) with check (true);</co
     });
   }
 
-  // Init after DOM ready
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', initHdrDrag);
-  else setTimeout(initHdrDrag, 100);
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initHdrDrag);
+  else setTimeout(initHdrDrag,200);
 })();
 
 /* ---- DETECT MOBILE ---- */
@@ -568,7 +555,6 @@ function renderClocks(){
     document.getElementById('d-prev').onclick=()=>{cur=new Date(cur);cur.setDate(cur.getDate()-1);renderCal()};
     document.getElementById('d-next').onclick=()=>{cur=new Date(cur);cur.setDate(cur.getDate()+1);renderCal()};
     document.getElementById('desk-today').onclick=()=>{cur=new Date();cur.setHours(0,0,0,0);renderCal()};
-    document.getElementById('desk-sync').onclick=openSync;
   }
   // Mobile strip
   const ms=document.getElementById('mob-strip');
@@ -784,12 +770,12 @@ function addRem(v){const n=v.trim();if(!n)return;S.reminders.push({id:S.nextId++
 });
 
 /* ---- MOBILE CAL MOUNT ---- */
-// On mobile, move the cal-panel into mob-cal-wrap
 function mountMobCal(){
   if(!isMob())return;
   const wrap=document.getElementById('mob-cal-wrap');
   const cal=document.getElementById('cal-panel');
-  if(wrap&&cal&&wrap.children.length===0)wrap.appendChild(cal);
+  // Only move if not already inside mob-cal-wrap
+  if(wrap&&cal&&cal.parentElement!==wrap)wrap.appendChild(cal);
 }
 
 setInterval(()=>{if(isToday(cur)){const nl=document.getElementById('now-ln');if(nl){const n=new Date();nl.style.top=((n.getHours()*60+n.getMinutes())/(24*60)*24*ROW_H)+'px';}}},60000);
